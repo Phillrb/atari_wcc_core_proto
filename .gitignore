@@ -1,0 +1,11 @@
+db
+*.bak
+greybox_tmp
+incremental_db
+modelsim
+output_files
+testbench/work
+*.mti
+*.mpf
+transcript
+*.wlf
