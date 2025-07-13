@@ -83,3 +83,8 @@ set_global_assignment -name QIP_FILE clock_divider.qip
 set_global_assignment -name VHDL_FILE CompSync.vhd
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
 set_global_assignment -name VHDL_FILE 74LS/LS27.vhd
+set_global_assignment -name VHDL_FILE components_pkg.vhd
+set_global_assignment -name VHDL_FILE ComputerClock.vhd
+set_global_assignment -name VHDL_FILE HorizontalSync.vhd
+set_global_assignment -name VHDL_FILE VerticalSync.vhd
+set_global_assignment -name VHDL_FILE SyncSumming.vhd

@@ -1,7 +1,3 @@
-<style>
-.over { text-decoration: overline; }
-</style>
-
 # GOAL IV | Wold Cup | Coupe Du Monde: Atari TM-035: Operation, Maintenance, and Service Manual
 
 ATARI Innovative leisure  
@@ -9,6 +5,10 @@ ATARI Innovative leisure
 Los Gatos, CA 95030  
 Telephone (408) 374-2440  
 Telex 357-488
+
+<style id="Add an overline to active-low signals on non-Github flavour Markdown">
+.over { text-decoration: overline; }
+</style>
 
 ## Table of Contents
 - [A. Introduction and Warranty](#a-introduction-and-warranty)

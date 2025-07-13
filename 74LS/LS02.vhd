@@ -1,11 +1,11 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
--- 		 74LS02 
---     Quad 2-Input
---		   NOR Gates
---		   ___  ___
--- 	  |   \/   |
+-- 		  74LS02 
+--      Quad 2-Input
+--		 NOR Gates
+--		 ___  ___
+-- 	    |   \/   |
 --  Y1 -| 1   14 |- VCC
 --  A1 -| 2	  13 |- Y4
 --  B1 -| 3	  12 |- B4 
@@ -13,22 +13,22 @@ use IEEE.STD_LOGIC_1164.ALL;
 --  A2 -| 5	  10 |- Y3
 --  B2 -| 6	   9 |- B3
 -- GND -| 7	   8 |- A3
---		  |________|
+--		|________|
 
 entity LS02 is
 	Port (
 		P1_Y1 	: out STD_LOGIC;
-		P2_A1 	: in  STD_LOGIC;
-		P3_B1		: in  STD_LOGIC;
+		P2_A1 	: in  STD_LOGIC := '0';
+		P3_B1	: in  STD_LOGIC := '0';
 		P4_Y2 	: out STD_LOGIC;
-		P5_A2		: in  STD_LOGIC;
-		P6_B2 	: in  STD_LOGIC;
+		P5_A2	: in  STD_LOGIC := '0';
+		P6_B2 	: in  STD_LOGIC := '0';
 		-- P7 : GND
-		P8_A3 	: in  STD_LOGIC;
-		P9_B3 	: in  STD_LOGIC;
+		P8_A3 	: in  STD_LOGIC := '0';
+		P9_B3 	: in  STD_LOGIC := '0';
 		P10_Y3 	: out	STD_LOGIC;
-		P11_A4	: in  STD_LOGIC;
-		P12_B4 	: in  STD_LOGIC;
+		P11_A4	: in  STD_LOGIC := '0';
+		P12_B4 	: in  STD_LOGIC := '0';
 		P13_Y4	: out STD_LOGIC
 		-- P14 : VCC
 	);

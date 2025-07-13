@@ -3,8 +3,8 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 -- 		 74LS04 
 --     Hex Inverter
---		   ___  ___
--- 	  |   \/   |
+--		 ___  ___
+-- 	    |   \/   |
 --  A1 -| 1   14 |- VCC
 --  Y1 -| 2	  13 |- A6
 --  A2 -| 3	  12 |- Y6 
@@ -12,23 +12,23 @@ use IEEE.STD_LOGIC_1164.ALL;
 --  A3 -| 5	  10 |- Y5
 --  Y3 -| 6	   9 |- A4
 -- GND -| 7	   8 |- Y4
---		  |________|
+--		|________|
 
 entity LS04 is
 	Port (
-		P1_A1 	: in  STD_LOGIC;
+		P1_A1 	: in  STD_LOGIC := '0';
 		P2_Y1 	: out STD_LOGIC;
-		P3_A2		: in  STD_LOGIC;
+		P3_A2	: in  STD_LOGIC := '0';
 		P4_Y2 	: out STD_LOGIC;
-		P5_A3		: in  STD_LOGIC;
+		P5_A3	: in  STD_LOGIC := '0';
 		P6_Y3 	: out STD_LOGIC;
 		-- P7 : GND
 		P8_Y4 	: out STD_LOGIC;
-		P9_A4 	: in  STD_LOGIC;
+		P9_A4 	: in  STD_LOGIC := '0';
 		P10_Y5 	: out STD_LOGIC;
-		P11_A5	: in  STD_LOGIC;
+		P11_A5	: in  STD_LOGIC := '0';
 		P12_Y6 	: out STD_LOGIC;
-		P13_A6	: in  STD_LOGIC
+		P13_A6	: in  STD_LOGIC := '0'
 		-- P14 : VCC
 	);
 end LS04;

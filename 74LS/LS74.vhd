@@ -1,35 +1,35 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
--- 		    74LS74 
+-- 		     74LS74 
 --    DUAL D-TYPE POSITIVE
 --  EDGE-TRIGGERED FLIP-FLOP
---		      ___  ___
---    	  |   \/   |
+--		    ___  ___
+--    	   |   \/   |
 --  !CLR1 -| 1   14 |- VCC
---     D1 -| 2	  13 |- !CLR2
---   CLK1 -| 3	  12 |- D2
---  !SET1 -| 4	  11 |- CLK2
---     Q1 -| 5	  10 |- !SET2
---    !Q1 -| 6	   9 |- Q2
---    GND -| 7	   8 |- !Q2
---		     |________|
+--     D1 -| 2   13 |- !CLR2
+--   CLK1 -| 3	 12 |- D2
+--  !SET1 -| 4	 11 |- CLK2
+--     Q1 -| 5	 10 |- !SET2
+--    !Q1 -| 6	  9 |- Q2
+--    GND -| 7	  8 |- !Q2
+--		   |________|
 
 entity LS74 is
 	Port (
-		P1_CLR1n : in  STD_LOGIC;
-		P2_D1 	: in  STD_LOGIC;
-		P3_CLK1	: in  STD_LOGIC;
-		P4_SET1n : in  STD_LOGIC;
+		P1_CLR1n : in  STD_LOGIC := '1';
+		P2_D1 	 : in  STD_LOGIC := '0';
+		P3_CLK1	 : in  STD_LOGIC := '0';
+		P4_SET1n : in  STD_LOGIC := '1';
 		P5_Q1    : out STD_LOGIC;
 		P6_Q1n   : out STD_LOGIC;
 		-- P7 : GND
-		P8_Q2n 	: out STD_LOGIC;
-		P9_Q2 	: out STD_LOGIC;
-		P10_SET2n : in STD_LOGIC;
-		P11_CLK2	:  in STD_LOGIC;
-		P12_D2	:  in STD_LOGIC;
-		P13_CLR2n : in STD_LOGIC
+		P8_Q2n 	  : out STD_LOGIC;
+		P9_Q2 	  : out STD_LOGIC;
+		P10_SET2n : in STD_LOGIC := '1';
+		P11_CLK2  : in STD_LOGIC := '0';
+		P12_D2	  : in STD_LOGIC := '0';
+		P13_CLR2n : in STD_LOGIC := '1'
 		-- P14 : VCC
 	);
 end LS74;

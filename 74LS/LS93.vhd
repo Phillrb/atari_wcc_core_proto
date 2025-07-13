@@ -1,24 +1,24 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
--- 		    74LS93 
---    4-Bit Binary Counter
---		      ___  ___
---    	  |   \/   |
+-- 		     74LS93 
+--     4-Bit Binary Counter
+--		    ___  ___
+--    	   |   \/   |
 --   !CP1 -| 1   14 |- !CP0
---    MR1 -| 2	  13 |- NC
---    MR2 -| 3	  12 |- Q0 
---     NC -| 4	  11 |- Q3
---    VCC -| 5	  10 |- GND
---     NC -| 6	   9 |- Q1
---     NC -| 7	   8 |- Q2
---		     |________|
+--    MR1 -| 2	 13 |- NC
+--    MR2 -| 3	 12 |- Q0 
+--     NC -| 4	 11 |- Q3
+--    VCC -| 5	 10 |- GND
+--     NC -| 6    9 |- Q1
+--     NC -| 7	  8 |- Q2
+--		   |________|
 
 entity LS93 is
 	Port (
-		P1_CP1n 	: in  STD_LOGIC;
-		P2_MR1 	: in  STD_LOGIC;
-		P3_MR2	: in  STD_LOGIC;
+		P1_CP1n : in  STD_LOGIC := '0';
+		P2_MR1 	: in  STD_LOGIC := '1';
+		P3_MR2	: in  STD_LOGIC := '1';
 		-- P4 : NC
 		-- P5 : VCC
 		-- P6 : NC
@@ -29,7 +29,7 @@ entity LS93 is
 		P11_Q3	: out STD_LOGIC;
 		P12_Q0	: out STD_LOGIC;
 		-- P13 : NC
-		P14_CP0n : in  STD_LOGIC
+		P14_CP0n : in  STD_LOGIC := '0'
 	);
 end LS93;
 
