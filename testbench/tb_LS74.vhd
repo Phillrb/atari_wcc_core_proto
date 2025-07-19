@@ -1,7 +1,6 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.NUMERIC_STD.ALL;
-USE IEEE.STD_LOGIC_ARITH.ALL;
 
 entity tb_LS74 is
 end entity tb_LS74;

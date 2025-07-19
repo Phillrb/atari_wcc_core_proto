@@ -1,35 +1,35 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
--- 		     74LS107 
+--           74LS107 
 --      DUAL J-K NEGATIVE
 --   EDGE-TRIGGERED FLIP-FLOPS
 --         WITH CLEAR
---		    ___  ___
---    	   |   \/   |
+--          ___  ___
+--         |   \/   |
 --     J1 -| 1   14 |- VCC
---    !Q1 -| 2	 13 |- CLR1!
---     Q1 -| 3	 12 |- CLK1!
---     K1 -| 4	 11 |- K2
---     Q2 -| 5	 10 |- CLR2!
---    !Q2 -| 6	  9 |- CLK2!
---    GND -| 7	  8 |- J2
---		   |________|
+--    !Q1 -| 2   13 |- CLR1!
+--     Q1 -| 3   12 |- CLK1!
+--     K1 -| 4   11 |- K2
+--     Q2 -| 5   10 |- CLR2!
+--    !Q2 -| 6    9 |- CLK2!
+--    GND -| 7    8 |- J2
+--         |________|
 
 entity LS107 is
 	Port (
 		P1_J1    : in  STD_LOGIC := '0';
-		P2_Q1n 	 : out STD_LOGIC;
-		P3_Q1 	 : out STD_LOGIC;
+		P2_Q1n   : out STD_LOGIC;
+		P3_Q1    : out STD_LOGIC;
 		P4_K1    : in  STD_LOGIC := '0';
 		P5_Q2    : out STD_LOGIC;
 		P6_Q2n   : out STD_LOGIC;
 		-- P7 : GND
-		P8_J2 	  : in STD_LOGIC := '0';
-		P9_CLK2   : in STD_LOGIC := '0';
+		P8_J2    : in STD_LOGIC := '0';
+		P9_CLK2  : in STD_LOGIC := '0';
 		P10_CLR2n : in STD_LOGIC := '1';
-		P11_K2	  : in STD_LOGIC := '0';
-		P12_CLK1  : in STD_LOGIC := '0';
+		P11_K2   : in STD_LOGIC := '0';
+		P12_CLK1 : in STD_LOGIC := '0';
 		P13_CLR1n : in STD_LOGIC := '1'
 		-- P14 : VCC
 	);

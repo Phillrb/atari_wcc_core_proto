@@ -1,7 +1,6 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.NUMERIC_STD.ALL;
-USE IEEE.STD_LOGIC_ARITH.ALL;
 
 entity tb_LS107 is
 end entity tb_LS107;
@@ -76,12 +75,12 @@ assert Q1n_out = '0';
 
 -- test Reset
 K1_in <= '1';
-wait for 2ns;
+wait for 2 ns;
 assert Q1_out = '0';
 assert Q1n_out = '1';
 
 K1_in <= '0';
-wait for 4ns;
+wait for 4 ns;
 assert Q1_out = '0';
 assert Q1n_out = '1';
 
@@ -140,12 +139,12 @@ assert Q2n_out = '0';
 
 -- test Reset
 K2_in <= '1';
-wait for 2ns;
+wait for 2 ns;
 assert Q2_out = '0';
 assert Q2n_out = '1';
 
 K2_in <= '0';
-wait for 4ns;
+wait for 4 ns;
 assert Q2_out = '0';
 assert Q2n_out = '1';
 

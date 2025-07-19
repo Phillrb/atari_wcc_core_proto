@@ -22,18 +22,23 @@ This project is a VHDL recreation of the classic 1974 discrete logic arcade game
 
 ## Atari WCC PCB
 
-Pedominantly 74 series ICs
+### IC Layout
+
+Pedominantly 74 series ICs.
+The UA747 at F9 and N9 are opamps so are not implemented.
 
 |       | A  | B  | C  | D  | E  | F  | H  | J  | K  | L  | M  | N  |
 | -----:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| **1** | 04 | 20 | 93 | 93 | 93 | 93 | 107| 00 | 74 | 30 | 08 |  - |
-| **2** | 10 | 107| 30 | 74 | 74 | 86 | 10 | 04 | 10 | 10 | 48 | 107|
-| **3** | 20 | 107| 00 | 08 | 04 | 02 | 27 | 00 | 90 | 90 | 153| 153|
-| **4** |9316|9316|9316|9316| 74 | 02 | 02 | 20 | 107|9316|9316| 27 |
-| **5** | 86 | 83 | 08 | 74 |9602| 08 | 02 |9602|  - | 74 | 86 | 00 |
-| **6** | 08 |9316| 04 | 74 | 86 | 00 | 10 | 27 | 08 | 86 | 92 |  - |
-| **7** | 83 | 02 | 86 |9314| 20 | 107| 153|9316|9316| 153|9316|9316|
-| **8** | 04 | 74 | 00 | 74 | 00 |  - | 107| 04 | 02 | 00 |  - | 555|
-| **9** | 74 | 74 | 02 | 04 | 555| 747| 555|9602|  - |  - |9602| 747|
+| **1** | [04](74LS/LS04.vhd) | [20](74LS/LS20.vhd) | [93](74LS/LS93.vhd) | [93](74LS/LS93.vhd) | [93](74LS/LS93.vhd) | [93](74LS/LS93.vhd) | [107](74LS/LS107.vhd) | [00](74LS/LS00.vhd) | [74](74LS/LS74.vhd) | [30](74LS/LS30.vhd) | [08](74LS/LS08.vhd) |  - |
+| **2** | [10](74LS/LS10.vhd) | [107](74LS/LS107.vhd) | [30](74LS/LS30.vhd) | [74](74LS/LS74.vhd) | [74](74LS/LS74.vhd) | [86](74LS/LS86.vhd) | [10](74LS/LS10.vhd) | [04](74LS/LS04.vhd) | [10](74LS/LS10.vhd) | [10](74LS/LS10.vhd) | [08](74LS/LS08.vhd) | [107](74LS/LS107.vhd) |
+| **3** | [20](74LS/LS20.vhd) | [107](74LS/LS107.vhd) | [00](74LS/LS00.vhd) | [08](74LS/LS08.vhd) | [04](74LS/LS04.vhd) | [02](74LS/LS02.vhd) | [27](74LS/LS27.vhd) | [00](74LS/LS00.vhd) | [90](74LS/LS90.vhd) | [90](74LS/LS90.vhd) | [153](74LS/LS153.vhd) | [153](74LS/LS153.vhd) |
+| **4** |[9316](74LS/LS9316.vhd)|[9316](74LS/LS9316.vhd)|[9316](74LS/LS9316.vhd)|[9316](74LS/LS9316.vhd)| [74](74LS/LS74.vhd) | [02](74LS/LS02.vhd) | [02](74LS/LS02.vhd) | [20](74LS/LS20.vhd) | [107](74LS/LS107.vhd) |[9316](74LS/LS9316.vhd)|[9316](74LS/LS9316.vhd)| [27](74LS/LS27.vhd) |
+| **5** | [86](74LS/LS86.vhd) | [83](74LS/LS83.vhd) | [08](74LS/LS08.vhd) | [74](74LS/LS74.vhd) |[9602](74LS/LS9602.vhd)| [08](74LS/LS08.vhd) | [02](74LS/LS02.vhd) |[9602](74LS/LS9602.vhd)|  - | [74](74LS/LS74.vhd) | [86](74LS/LS86.vhd) | [00](74LS/LS00.vhd) |
+| **6** | [08](74LS/LS08.vhd) |[9316](74LS/LS9316.vhd)| [04](74LS/LS04.vhd) | [74](74LS/LS74.vhd) | [86](74LS/LS86.vhd) | [00](74LS/LS00.vhd) | [10](74LS/LS10.vhd) | [27](74LS/LS27.vhd) | [08](74LS/LS08.vhd) | [86](74LS/LS86.vhd) | [92](74LS/LS92.vhd) |  - |
+| **7** | [83](74LS/LS83.vhd) | [02](74LS/LS02.vhd) | [86](74LS/LS86.vhd) |[9314](74LS/LS9314.vhd)| [20](74LS/LS20.vhd) | [107](74LS/LS107.vhd) | [153](74LS/LS153.vhd) |[9316](74LS/LS9316.vhd)|[9316](74LS/LS9316.vhd)| [153](74LS/LS153.vhd) |[9316](74LS/LS9316.vhd)|[9316](74LS/LS9316.vhd)|
+| **8** | [04](74LS/LS04.vhd) | [74](74LS/LS74.vhd) | [00](74LS/LS00.vhd) | [74](74LS/LS74.vhd) | [00](74LS/LS00.vhd) |  - | [107](74LS/LS107.vhd) | [04](74LS/LS04.vhd) | [02](74LS/LS02.vhd) | [00](74LS/LS00.vhd) |  - | [555](74LS/555.vhd)|
+| **9** | [74](74LS/LS74.vhd) | [74](74LS/LS74.vhd) | [02](74LS/LS02.vhd) | [04](74LS/LS04.vhd) | [555](74LS/555.vhd)| 747| [555](74LS/555.vhd)|[9602](74LS/LS9602.vhd)|  - |  - |[9602](74LS/LS9602.vhd)| 747|
+
+### PCB Image
 
 ![Atari WCC PCB](diagrams/atari_wcc_pcb.jpg)
