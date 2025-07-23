@@ -7,7 +7,7 @@ end 555_tb;
 architecture Behavioral of 555_tb is
 
 -- Component declaration
-component 555 is
+component IC555 is
     Port (
         P1_GND   : in  STD_LOGIC := '0';
         P2_TRIG  : in  STD_LOGIC := '1';
@@ -28,16 +28,17 @@ signal OUT_sig, DISCH : STD_LOGIC;
 begin
 
 -- Instantiate the 555 timer
-UUT: LS555 port map (
-    P1_GND => GND,
-    P2_TRIG => TRIG,
-    P3_OUT => OUT_sig,
-    P4_RST => RST,
-    P5_CTRL => CTRL,
-    P6_THRES => THRES,
-    P7_DISCH => DISCH,
-    P8_VCC => VCC
-);
+dut: IC555
+    port map (
+        P1_GND => GND,
+        P2_TRIG => TRIG,
+        P3_OUT => OUT_sig,
+        P4_RST => RST,
+        P5_CTRL => CTRL,
+        P6_THRES => THRES,
+        P7_DISCH => DISCH,
+        P8_VCC => VCC
+    );
 
 -- Test stimulus
 stim_proc: process

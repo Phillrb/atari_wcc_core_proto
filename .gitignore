@@ -9,3 +9,4 @@ testbench/work
 *.mpf
 transcript
 *.wlf
+*.cf
