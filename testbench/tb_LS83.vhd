@@ -1,77 +1,128 @@
+-- tb_LS83.vhd
+-- Testbench for LS83 4-bit binary full adder
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
 
 entity tb_LS83 is
 end tb_LS83;
 
-architecture sim of tb_LS83 is
-    signal A : std_logic_vector(3 downto 0) := (others => '0');
-    signal B : std_logic_vector(3 downto 0) := (others => '0');
-    signal C0 : std_logic := '0';
-    signal S : std_logic_vector(3 downto 0);
-    signal C4 : std_logic;
+architecture Behavioral of tb_LS83 is
+    component LS83
+        Port (
+            P1_A4  : in  STD_LOGIC := '0';
+            P2_S3  : out STD_LOGIC;
+            P3_A3  : in  STD_LOGIC := '0';
+            P4_B3  : in  STD_LOGIC := '0';
+            P6_S2  : out STD_LOGIC;
+            P7_B2  : in  STD_LOGIC := '0';
+            P8_A2  : in  STD_LOGIC := '0';
+            P9_S1  : out STD_LOGIC;
+            P10_A1 : in  STD_LOGIC := '0';
+            P11_B1 : in  STD_LOGIC := '0';
+            P13_CIN: in  STD_LOGIC := '0';
+            P14_COUT: out STD_LOGIC;
+            P15_S4 : out STD_LOGIC;
+            P16_B4 : in  STD_LOGIC := '0'
+        );
+    end component;
 
-    -- Map LS83 pins to signals
-    signal P1_A1, P3_A2, P5_A3, P11_A4 : std_logic := '0';
-    signal P2_B1, P14_B2, P12_B3, P7_B4 : std_logic := '0';
-    signal P9_C0 : std_logic := '0';
-    signal P15_S1, P4_S2, P13_S3, P6_S4 : std_logic;
-    signal P10_C4 : std_logic;
+    signal A, B : std_logic_vector(3 downto 0);
+    signal CIN  : std_logic;
+    signal S    : std_logic_vector(3 downto 0);
+    signal COUT : std_logic;
+
+    -- Utility function to print std_logic_vector as string
+    function slv_to_str(slv : std_logic_vector) return string is
+        variable result : string(1 to slv'length);
+    begin
+        for i in slv'range loop
+            if slv(i) = '1' then
+                result(i - slv'low + 1) := '1';
+            else
+                result(i - slv'low + 1) := '0';
+            end if;
+        end loop;
+        return result;
+    end;
 
 begin
-    -- Connect signals to LS83 pins
-    P1_A1 <= A(0); P3_A2 <= A(1); P5_A3 <= A(2); P11_A4 <= A(3);
-    P2_B1 <= B(0); P14_B2 <= B(1); P12_B3 <= B(2); P7_B4 <= B(3);
-    P9_C0 <= C0;
-    S(0) <= P15_S1; S(1) <= P4_S2; S(2) <= P13_S3; S(3) <= P6_S4;
-    C4 <= P10_C4;
-
-    uut: entity work.LS83
+    DUT: LS83
         port map (
-            P1_A1 => P1_A1,
-            P2_B1 => P2_B1,
-            P3_A2 => P3_A2,
-            P4_S2 => P4_S2,
-            P5_A3 => P5_A3,
-            P6_S4 => P6_S4,
-            P7_B4 => P7_B4,
-            P9_C0 => P9_C0,
-            P10_C4 => P10_C4,
-            P11_A4 => P11_A4,
-            P12_B3 => P12_B3,
-            P13_S3 => P13_S3,
-            P14_B2 => P14_B2,
-            P15_S1 => P15_S1
+            P1_A4  => A(3),
+            P2_S3  => S(2),
+            P3_A3  => A(2),
+            P4_B3  => B(2),
+            P6_S2  => S(1),
+            P7_B2  => B(1),
+            P8_A2  => A(1),
+            P9_S1  => S(0),
+            P10_A1 => A(0),
+            P11_B1 => B(0),
+            P13_CIN=> CIN,
+            P14_COUT => COUT,
+            P15_S4 => S(3),
+            P16_B4 => B(3)
         );
 
-    process
+    stimulus: process
+        variable expected : unsigned(4 downto 0);
+        variable sum_val : integer;
+        function sl_to_char(s : std_logic) return character is
+        begin
+            if s = '1' then return '1'; else return '0'; end if;
+        end;
     begin
-        -- Test 1: 3 + 5 + 0 = 8
-        A <= "0011"; B <= "0101"; C0 <= '0'; wait for 10 ns;
-        assert (S = "1000" and C4 = '0')
-            report "Test 1 failed: 3+5+0" severity error;
+        -- Test all zeros
+        A <= "0000"; B <= "0000"; CIN <= '0'; wait for 10 ns;
+        sum_val := to_integer(unsigned(A)) + to_integer(unsigned(B));
+        if CIN = '1' then sum_val := sum_val + 1; end if;
+        expected := to_unsigned(sum_val, 5);
+        report "A=0000, B=0000, CIN=0: S=" & slv_to_str(S) & ", COUT=" & sl_to_char(COUT);
+        assert S = std_logic_vector(expected(3 downto 0)) and COUT = expected(4) report "Test 0 failed" severity error;
 
-        -- Test 2: 7 + 8 + 1 = 16 (carry out)
-        A <= "0111"; B <= "1000"; C0 <= '1'; wait for 10 ns;
-        assert (S = "0000" and C4 = '1')
-            report "Test 2 failed: 7+8+1" severity error;
+        -- Test all ones, no carry in
+        A <= "1111"; B <= "1111"; CIN <= '0'; wait for 10 ns;
+        sum_val := to_integer(unsigned(A)) + to_integer(unsigned(B));
+        if CIN = '1' then sum_val := sum_val + 1; end if;
+        expected := to_unsigned(sum_val, 5);
+        report "A=1111, B=1111, CIN=0: S=" & slv_to_str(S) & ", COUT=" & sl_to_char(COUT);
+        assert S = std_logic_vector(expected(3 downto 0)) and COUT = expected(4) report "Test 1 failed" severity error;
 
-        -- Test 3: 15 + 15 + 1 = 31 (overflow)
-        A <= "1111"; B <= "1111"; C0 <= '1'; wait for 10 ns;
-        assert (S = "1111" and C4 = '1')
-            report "Test 3 failed: 15+15+1" severity error;
+        -- Test all ones, carry in
+        A <= "1111"; B <= "1111"; CIN <= '1'; wait for 10 ns;
+        sum_val := to_integer(unsigned(A)) + to_integer(unsigned(B));
+        if CIN = '1' then sum_val := sum_val + 1; end if;
+        expected := to_unsigned(sum_val, 5);
+        report "A=1111, B=1111, CIN=1: S=" & slv_to_str(S) & ", COUT=" & sl_to_char(COUT);
+        assert S = std_logic_vector(expected(3 downto 0)) and COUT = expected(4) report "Test 2 failed" severity error;
 
-        -- Test 4: 0 + 0 + 0 = 0
-        A <= "0000"; B <= "0000"; C0 <= '0'; wait for 10 ns;
-        assert (S = "0000" and C4 = '0')
-            report "Test 4 failed: 0+0+0" severity error;
+        -- Test alternating bits
+        A <= "1010"; B <= "0101"; CIN <= '0'; wait for 10 ns;
+        sum_val := to_integer(unsigned(A)) + to_integer(unsigned(B));
+        if CIN = '1' then sum_val := sum_val + 1; end if;
+        expected := to_unsigned(sum_val, 5);
+        report "A=1010, B=0101, CIN=0: S=" & slv_to_str(S) & ", COUT=" & sl_to_char(COUT);
+        assert S = std_logic_vector(expected(3 downto 0)) and COUT = expected(4) report "Test 3 failed" severity error;
 
-        -- Test 5: 9 + 6 + 0 = 15
-        A <= "1001"; B <= "0110"; C0 <= '0'; wait for 10 ns;
-        assert (S = "1111" and C4 = '0')
-            report "Test 5 failed: 9+6+0" severity error;
+        -- Test with carry in
+        A <= "0011"; B <= "1100"; CIN <= '1'; wait for 10 ns;
+        sum_val := to_integer(unsigned(A)) + to_integer(unsigned(B));
+        if CIN = '1' then sum_val := sum_val + 1; end if;
+        expected := to_unsigned(sum_val, 5);
+        report "A=0011, B=1100, CIN=1: S=" & slv_to_str(S) & ", COUT=" & sl_to_char(COUT);
+        assert S = std_logic_vector(expected(3 downto 0)) and COUT = expected(4) report "Test 4 failed" severity error;
 
-        report "All LS83 tests passed!" severity note;
+        -- Test random
+        A <= "0110"; B <= "0011"; CIN <= '1'; wait for 10 ns;
+        sum_val := to_integer(unsigned(A)) + to_integer(unsigned(B));
+        if CIN = '1' then sum_val := sum_val + 1; end if;
+        expected := to_unsigned(sum_val, 5);
+        report "A=0110, B=0011, CIN=1: S=" & slv_to_str(S) & ", COUT=" & sl_to_char(COUT);
+        assert S = std_logic_vector(expected(3 downto 0)) and COUT = expected(4) report "Test 5 failed" severity error;
+
+        report "All LS83 tests completed.";
         wait;
     end process;
-end sim; 
+end Behavioral; 

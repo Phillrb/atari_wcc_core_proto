@@ -1,7 +1,7 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
---           74LS107 
+--           74LS107
 --      DUAL J-K NEGATIVE
 --   EDGE-TRIGGERED FLIP-FLOPS
 --         WITH CLEAR
@@ -37,14 +37,6 @@ end LS107;
 
 architecture Behavioral of LS107 is
 
-component JK_flip_flop is
-	Port (
-		clk, J, K, prs, clr : in  STD_LOGIC := '0';
-		Q    : out STD_LOGIC;
-		Qnot : out STD_LOGIC
-	);
-end component;
-
 signal CLK1n, CLK2n, CLR1, CLR2 : STD_LOGIC;
 
 begin
@@ -57,16 +49,16 @@ CLK2n <= not P9_CLK2;
 CLR1 <= not P13_CLR1n;
 CLR2 <= not P10_CLR2n;
 
-JKFF1: JK_flip_flop 
+JKFF1: entity work.JK_flip_flop
 	port map(
 		CLK1n, P1_J1, P4_K1, '0', CLR1,
 		P3_Q1, P2_Q1n
 	);
-	
-JKFF2: JK_flip_flop 
+
+JKFF2: entity work.JK_flip_flop
 	port map(
 		CLK2n, P8_J2, P11_K2, '0', CLR2,
 		P5_Q2, P6_Q2n
 	);
-	
+
 end Behavioral;

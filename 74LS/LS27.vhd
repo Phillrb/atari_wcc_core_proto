@@ -36,7 +36,7 @@ end LS27;
 
 architecture Behavioral of LS27 is
 begin
-	P6_Y2 <= ((P3_A2 nor P4_B2) nor P5_C2);
-	P8_Y3 <= ((P9_A3 nor P10_B3) nor P11_C3);
-	P12_Y1 <= ((P1_A1 nor P2_B1) nor P13_C1);
+	P6_Y2 <= not(P3_A2 or P4_B2 or P5_C2);
+	P8_Y3 <= not(P9_A3 or P10_B3 or P11_C3);
+	P12_Y1 <= not(P1_A1 or P2_B1 or P13_C1);
 end Behavioral;

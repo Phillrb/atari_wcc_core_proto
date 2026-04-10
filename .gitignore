@@ -10,3 +10,18 @@ testbench/work
 transcript
 *.wlf
 *.cf
+
+# Python
+sim/__pycache__/
+*.pyc
+
+# Claude Code local settings (contains local paths)
+.claude/settings.local.json
+
+# GHDL simulation outputs
+sim/frame_data.txt
+sim/run_log*.txt
+sim/commit_msg.txt
+sim/frame_output.ppm
+sim/frame_output.png
+sim/gameplay.gif

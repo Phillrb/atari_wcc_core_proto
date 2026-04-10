@@ -1,11 +1,11 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
--- 		   74LS20 
+--        74LS20 
 --      DUAL 4-INPUT
---		 NAND GATE
---		 ___  ___
--- 	    |   \/   |
+--       NAND GATE
+--       ___  ___
+--      |   \/   |
 --  A1 -| 1   14 |- VCC
 --  B1 -| 2	  13 |- A2
 --  NC -| 3	  12 |- B2 
@@ -13,7 +13,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 --  D1 -| 5	  10 |- C2
 --  Y1 -| 6	   9 |- D2
 -- GND -| 7	   8 |- Y2
---		|________|
+--      |________|
 
 entity LS20 is
 	Port (
@@ -36,6 +36,6 @@ end LS20;
 
 architecture Behavioral of LS20 is
 begin
-	P6_Y1 <= (((P1_A1 nand P2_B1) nand P4_C1) nand P5_D1);
-	P8_Y2 <= (((P13_A2 nand P12_B2) nand P10_C2) nand P9_D2);
+	P6_Y1 <= not(P1_A1 and P2_B1 and P4_C1 and P5_D1);
+	P8_Y2 <= not(P13_A2 and P12_B2 and P10_C2 and P9_D2);
 end Behavioral;

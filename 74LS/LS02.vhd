@@ -1,11 +1,11 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
--- 		  74LS02 
+--        74LS02 
 --      Quad 2-Input
---		 NOR Gates
---		 ___  ___
--- 	    |   \/   |
+--       NOR Gates
+--       ___  ___
+--      |   \/   |
 --  Y1 -| 1   14 |- VCC
 --  A1 -| 2	  13 |- Y4
 --  B1 -| 3	  12 |- B4 
@@ -13,7 +13,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 --  A2 -| 5	  10 |- Y3
 --  B2 -| 6	   9 |- B3
 -- GND -| 7	   8 |- A3
---		|________|
+--      |________|
 
 entity LS02 is
 	Port (

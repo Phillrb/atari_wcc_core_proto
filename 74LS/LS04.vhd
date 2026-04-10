@@ -3,8 +3,8 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 -- 		 74LS04 
 --     Hex Inverter
---		 ___  ___
--- 	    |   \/   |
+--       ___  ___
+--      |   \/   |
 --  A1 -| 1   14 |- VCC
 --  Y1 -| 2	  13 |- A6
 --  A2 -| 3	  12 |- Y6 
@@ -12,7 +12,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 --  A3 -| 5	  10 |- Y5
 --  Y3 -| 6	   9 |- A4
 -- GND -| 7	   8 |- Y4
---		|________|
+--      |________|
 
 entity LS04 is
 	Port (

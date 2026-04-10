@@ -2,56 +2,71 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
 --        74LS83
---   4-bit Binary Full Adder
+--     4-bit Binary 
+--      Full Adder
 --       ___  ___
 --      |   \/   |
---  A1 -| 1   16 |- VCC
---  B1 -| 2   15 |- S1
---  A2 -| 3   14 |- B2
---  S2 -| 4   13 |- S3
---  A3 -| 5   12 |- B3
---  S4 -| 6   11 |- A4
---  B4 -| 7   10 |- C4
---  GND-| 8    9 |- C0
+--  A4 -| 1   16 |- B4
+--  S3 -| 2	  15 |- S4
+--  A3 -| 3	  14 |- COUT
+--  B3 -| 4	  13 |- CIN
+-- VCC -| 5	  12 |- GND
+--  S2 -| 6	  11 |- B1
+--  B2 -| 7	  10 |- A1
+--  A2 -| 8	   9 |- S1
 --      |________|
 
 entity LS83 is
-    Port (
-        P1_A1  : in  STD_LOGIC := '0';
-        P2_B1  : in  STD_LOGIC := '0';
-        P3_A2  : in  STD_LOGIC := '0';
-        P4_S2  : out STD_LOGIC;
-        P5_A3  : in  STD_LOGIC := '0';
-        P6_S4  : out STD_LOGIC;
-        P7_B4  : in  STD_LOGIC := '0';
-        -- P8 : GND
-        P9_C0  : in  STD_LOGIC := '0';
-        P10_C4 : out STD_LOGIC;
-        P11_A4 : in  STD_LOGIC := '0';
-        P12_B3 : in  STD_LOGIC := '0';
-        P13_S3 : out STD_LOGIC;
-        P14_B2 : in  STD_LOGIC := '0';
-        P15_S1 : out STD_LOGIC
-        -- P16 : VCC
-    );
+	Port (
+		P1_A4 	: in  STD_LOGIC := '0';
+		P2_S3 	: out STD_LOGIC;
+		P3_A3	: in  STD_LOGIC := '0';
+		P4_B3 	: in  STD_LOGIC := '0';
+		-- P5 : VCC
+		P6_S2 	: out STD_LOGIC;
+		P7_B2 	: in  STD_LOGIC := '0';
+		P8_A2 	: in  STD_LOGIC := '0';
+		P9_S1 	: out STD_LOGIC;
+		P10_A1 	: in  STD_LOGIC := '0';
+		P11_B1	: in  STD_LOGIC := '0';
+		-- P12 : GND
+		P13_CIN : in  STD_LOGIC := '0';
+		P14_COUT : out STD_LOGIC;
+		P15_S4 : out STD_LOGIC;
+		P16_B4 : in  STD_LOGIC := '0'
+	);
 end LS83;
 
 architecture Behavioral of LS83 is
-    signal c1, c2, c3 : STD_LOGIC;
+    signal a, b : std_logic_vector(3 downto 0);
+    signal sum  : std_logic_vector(3 downto 0);
+    signal carry : std_logic_vector(4 downto 0);
 begin
-    -- Bit 1 (LSB)
-    P15_S1 <= P1_A1 xor P2_B1 xor P9_C0;
-    c1     <= (P1_A1 and P2_B1) or (P1_A1 and P9_C0) or (P2_B1 and P9_C0);
+    -- Map pins to vectors (A1 = LSB, A4 = MSB)
+    a(0) <= P10_A1;
+    a(1) <= P8_A2;
+    a(2) <= P3_A3;
+    a(3) <= P1_A4;
+    b(0) <= P11_B1;
+    b(1) <= P7_B2;
+    b(2) <= P4_B3;
+    b(3) <= P16_B4;
+    carry(0) <= P13_CIN;
 
-    -- Bit 2
-    P4_S2  <= P3_A2 xor P14_B2 xor c1;
-    c2     <= (P3_A2 and P14_B2) or (P3_A2 and c1) or (P14_B2 and c1);
+    -- Full adder logic
+    sum(0) <= a(0) xor b(0) xor carry(0);
+    carry(1) <= (a(0) and b(0)) or (a(0) and carry(0)) or (b(0) and carry(0));
+    sum(1) <= a(1) xor b(1) xor carry(1);
+    carry(2) <= (a(1) and b(1)) or (a(1) and carry(1)) or (b(1) and carry(1));
+    sum(2) <= a(2) xor b(2) xor carry(2);
+    carry(3) <= (a(2) and b(2)) or (a(2) and carry(2)) or (b(2) and carry(2));
+    sum(3) <= a(3) xor b(3) xor carry(3);
+    carry(4) <= (a(3) and b(3)) or (a(3) and carry(3)) or (b(3) and carry(3));
 
-    -- Bit 3
-    P13_S3 <= P5_A3 xor P12_B3 xor c2;
-    c3     <= (P5_A3 and P12_B3) or (P5_A3 and c2) or (P12_B3 and c2);
-
-    -- Bit 4 (MSB)
-    P6_S4  <= P11_A4 xor P7_B4 xor c3;
-    P10_C4 <= (P11_A4 and P7_B4) or (P11_A4 and c3) or (P7_B4 and c3);
+    -- Output assignments
+    P9_S1  <= sum(0);
+    P6_S2  <= sum(1);
+    P2_S3  <= sum(2);
+    P15_S4 <= sum(3);
+    P14_COUT <= carry(4);
 end Behavioral; 

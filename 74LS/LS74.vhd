@@ -1,11 +1,11 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
--- 		     74LS74 
+-- 		     74LS74
 --    DUAL D-TYPE POSITIVE
 --  EDGE-TRIGGERED FLIP-FLOP
---		    ___  ___
---    	   |   \/   |
+--          ___  ___
+--         |   \/   |
 --  !CLR1 -| 1   14 |- VCC
 --     D1 -| 2   13 |- !CLR2
 --   CLK1 -| 3	 12 |- D2
@@ -13,7 +13,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 --     Q1 -| 5	 10 |- !SET2
 --    !Q1 -| 6	  9 |- Q2
 --    GND -| 7	  8 |- !Q2
---		   |________|
+--         |________|
 
 entity LS74 is
 	Port (
@@ -36,14 +36,6 @@ end LS74;
 
 architecture Behavioral of LS74 is
 
-component D_flip_flop is
-	Port (
-		clk, D, prs, clr : in  STD_LOGIC := '0';
-		Q    : out STD_LOGIC;
-		Qnot : out STD_LOGIC
-	);
-end component;
-
 signal SET1, SET2, CLR1, CLR2 : STD_LOGIC;
 
 begin
@@ -53,16 +45,16 @@ CLR1 <= not P1_CLR1n;
 SET2 <= not P10_SET2n;
 CLR2 <= not P13_CLR2n;
 
-DFF1: D_flip_flop 
+DFF1: entity work.D_flip_flop
 	port map(
 		P3_CLK1, P2_D1, SET1, CLR1,
 		P5_Q1, P6_Q1n
 	);
-	
-DFF2: D_flip_flop 
+
+DFF2: entity work.D_flip_flop
 	port map(
 		P11_CLK2, P12_D2, SET2, CLR2,
 		P9_Q2, P8_Q2n
 	);
-	
+
 end Behavioral;

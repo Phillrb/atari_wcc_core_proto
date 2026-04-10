@@ -1,244 +1,126 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
 
 entity tb_LS90 is
 end tb_LS90;
 
 architecture Behavioral of tb_LS90 is
+    component LS90
+        Port (
+            P1_CP1n  : in  STD_LOGIC;
+            P2_MR1   : in  STD_LOGIC;
+            P3_MR2   : in  STD_LOGIC;
+            P6_MS1   : in  STD_LOGIC;
+            P7_MS2   : in  STD_LOGIC;
+            P8_Q2    : out STD_LOGIC;
+            P9_Q1    : out STD_LOGIC;
+            P11_Q3   : out STD_LOGIC;
+            P12_Q0   : out STD_LOGIC;
+            P14_CP0n : in  STD_LOGIC
+        );
+    end component;
 
--- Component declaration
-component LS90 is
-    Port (
-        P1_R01  : in  STD_LOGIC := '1';
-        P2_R02  : in  STD_LOGIC := '1';
-        P8_Q2   : out STD_LOGIC;
-        P9_Q1   : out STD_LOGIC;
-        P11_Q3  : out STD_LOGIC;
-        P12_Q0  : out STD_LOGIC;
-        CP0     : in  STD_LOGIC := '0';
-        CP1     : in  STD_LOGIC := '0'
-    );
-end component;
+    signal CP1n, CP0n : std_logic := '1';
+    signal MR1, MR2 : std_logic := '0';
+    signal MS1, MS2 : std_logic := '0';
+    signal Q0, Q1, Q2, Q3 : std_logic;
+    signal Q_vec : std_logic_vector(3 downto 0);
 
--- Test signals
-signal R01, R02 : STD_LOGIC;
-signal CP0, CP1 : STD_LOGIC;
-signal Q0, Q1, Q2, Q3 : STD_LOGIC;
+    -- Utility function to print std_logic_vector as string
+    function slv_to_str(slv : std_logic_vector) return string is
+        variable result : string(1 to slv'length);
+    begin
+        for i in 0 to slv'length-1 loop
+            if slv(slv'high - i) = '1' then
+                result(i + 1) := '1';
+            else
+                result(i + 1) := '0';
+            end if;
+        end loop;
+        return result;
+    end;
 
 begin
+    Q_vec <= Q0 & Q1 & Q2 & Q3;  -- LSB to MSB order to match internal count
 
--- Instantiate the LS90 decade counter
-UUT: LS90 port map (
-    P1_R01 => R01,
-    P2_R02 => R02,
-    P8_Q2 => Q2,
-    P9_Q1 => Q1,
-    P11_Q3 => Q3,
-    P12_Q0 => Q0,
-    CP0 => CP0,
-    CP1 => CP1
-);
+    DUT: LS90
+        port map (
+            P1_CP1n  => CP1n,
+            P2_MR1   => MR1,
+            P3_MR2   => MR2,
+            P6_MS1   => MS1,
+            P7_MS2   => MS2,
+            P8_Q2    => Q2,
+            P9_Q1    => Q1,
+            P11_Q3   => Q3,
+            P12_Q0   => Q0,
+            P14_CP0n => CP0n
+        );
 
--- Test stimulus with detailed debugging
-stim_proc: process
-begin
-    report "=== TEST LS90 decade counter - START ===";
-    report "Initial state - R01=" & std_logic'image(R01) & " R02=" & std_logic'image(R02) & 
-           " CP0=" & std_logic'image(CP0) & " CP1=" & std_logic'image(CP1);
-    report "Outputs - Q0=" & std_logic'image(Q0) & " Q1=" & std_logic'image(Q1) & 
-           " Q2=" & std_logic'image(Q2) & " Q3=" & std_logic'image(Q3);
+    stimulus: process
+        procedure clock_0 is
+        begin
+            CP0n <= '0'; wait for 5 ns;
+            CP0n <= '1'; wait for 5 ns;
+        end procedure;
+        
+        procedure clock_1 is
+        begin
+            CP1n <= '0'; wait for 5 ns;
+            CP1n <= '1'; wait for 5 ns;
+        end procedure;
+        
+    begin
+        report "Starting LS90 BCD counter testbench...";
 
-    -- Initialize signals
-    R01 <= '1';
-    R02 <= '1';
-    CP0 <= '0';
-    CP1 <= '0';
-    
-    wait for 10 ns;
-    report "After initialization - R01=" & std_logic'image(R01) & " R02=" & std_logic'image(R02) & 
-           " CP0=" & std_logic'image(CP0) & " CP1=" & std_logic'image(CP1);
-    report "Outputs - Q0=" & std_logic'image(Q0) & " Q1=" & std_logic'image(Q1) & 
-           " Q2=" & std_logic'image(Q2) & " Q3=" & std_logic'image(Q3);
-    
-    -- Test 1: Reset functionality
-    report "=== Test 1: Reset functionality ===";
-    
-    -- Set reset low
-    R01 <= '0';
-    R02 <= '0';
-    wait for 5 ns;
-    report "After setting reset low - R01=" & std_logic'image(R01) & " R02=" & std_logic'image(R02);
-    report "Outputs - Q0=" & std_logic'image(Q0) & " Q1=" & std_logic'image(Q1) & 
-           " Q2=" & std_logic'image(Q2) & " Q3=" & std_logic'image(Q3);
-    
-    assert (Q0 = '0' and Q1 = '0' and Q2 = '0' and Q3 = '0') 
-        report "Counter should be reset to 0000" severity error;
-    
-    -- Release reset
-    R01 <= '1';
-    R02 <= '1';
-    wait for 5 ns;
-    report "After releasing reset - R01=" & std_logic'image(R01) & " R02=" & std_logic'image(R02);
-    report "Outputs - Q0=" & std_logic'image(Q0) & " Q1=" & std_logic'image(Q1) & 
-           " Q2=" & std_logic'image(Q2) & " Q3=" & std_logic'image(Q3);
-    
-    -- Test 2: Counting sequence with CP0
-    report "=== Test 2: Counting sequence with CP0 ===";
-    
-    -- Count through 0-9 sequence
-    for i in 0 to 9 loop
-        report "Clock cycle " & integer'image(i) & " - Before clock";
-        report "CP0=" & std_logic'image(CP0) & " CP1=" & std_logic'image(CP1);
-        report "Outputs - Q0=" & std_logic'image(Q0) & " Q1=" & std_logic'image(Q1) & 
-               " Q2=" & std_logic'image(Q2) & " Q3=" & std_logic'image(Q3);
+        -- Test 1: Reset functionality
+        report "Test 1: Reset functionality";
+        MR1 <= '1'; wait for 2 ns;
+        report "After MR1=1: Q_vec=" & slv_to_str(Q_vec);
+        assert Q_vec = "0000" report "Counter should be 0000 after MR1 reset" severity error;
+        MR1 <= '0'; wait for 2 ns;
         
-        CP0 <= '1';
-        wait for 5 ns;
-        report "Clock cycle " & integer'image(i) & " - After clock high";
-        report "CP0=" & std_logic'image(CP0) & " CP1=" & std_logic'image(CP1);
-        report "Outputs - Q0=" & std_logic'image(Q0) & " Q1=" & std_logic'image(Q1) & 
-               " Q2=" & std_logic'image(Q2) & " Q3=" & std_logic'image(Q3);
-        
-        CP0 <= '0';
-        wait for 5 ns;
-        report "Clock cycle " & integer'image(i) & " - After clock low";
-        report "CP0=" & std_logic'image(CP0) & " CP1=" & std_logic'image(CP1);
-        report "Outputs - Q0=" & std_logic'image(Q0) & " Q1=" & std_logic'image(Q1) & 
-               " Q2=" & std_logic'image(Q2) & " Q3=" & std_logic'image(Q3);
-        
-        -- Verify count value (corrected expectations)
-        case i is
-            when 0 => 
-                assert (Q0 = '1' and Q1 = '0' and Q2 = '0' and Q3 = '0') 
-                    report "Count should be 0001, got " & std_logic'image(Q0) & std_logic'image(Q1) & std_logic'image(Q2) & std_logic'image(Q3) severity error;
-            when 1 => 
-                assert (Q0 = '0' and Q1 = '1' and Q2 = '0' and Q3 = '0') 
-                    report "Count should be 0010, got " & std_logic'image(Q0) & std_logic'image(Q1) & std_logic'image(Q2) & std_logic'image(Q3) severity error;
-            when 2 => 
-                assert (Q0 = '1' and Q1 = '1' and Q2 = '0' and Q3 = '0') 
-                    report "Count should be 0011, got " & std_logic'image(Q0) & std_logic'image(Q1) & std_logic'image(Q2) & std_logic'image(Q3) severity error;
-            when 3 => 
-                assert (Q0 = '0' and Q1 = '0' and Q2 = '1' and Q3 = '0') 
-                    report "Count should be 0100, got " & std_logic'image(Q0) & std_logic'image(Q1) & std_logic'image(Q2) & std_logic'image(Q3) severity error;
-            when 4 => 
-                assert (Q0 = '1' and Q1 = '0' and Q2 = '1' and Q3 = '0') 
-                    report "Count should be 0101, got " & std_logic'image(Q0) & std_logic'image(Q1) & std_logic'image(Q2) & std_logic'image(Q3) severity error;
-            when 5 => 
-                assert (Q0 = '0' and Q1 = '1' and Q2 = '1' and Q3 = '0') 
-                    report "Count should be 0110, got " & std_logic'image(Q0) & std_logic'image(Q1) & std_logic'image(Q2) & std_logic'image(Q3) severity error;
-            when 6 => 
-                assert (Q0 = '1' and Q1 = '1' and Q2 = '1' and Q3 = '0') 
-                    report "Count should be 0111, got " & std_logic'image(Q0) & std_logic'image(Q1) & std_logic'image(Q2) & std_logic'image(Q3) severity error;
-            when 7 => 
-                assert (Q0 = '0' and Q1 = '0' and Q2 = '0' and Q3 = '1') 
-                    report "Count should be 1000, got " & std_logic'image(Q0) & std_logic'image(Q1) & std_logic'image(Q2) & std_logic'image(Q3) severity error;
-            when 8 => 
-                assert (Q0 = '1' and Q1 = '0' and Q2 = '0' and Q3 = '1') 
-                    report "Count should be 1001, got " & std_logic'image(Q0) & std_logic'image(Q1) & std_logic'image(Q2) & std_logic'image(Q3) severity error;
-            when 9 => 
-                assert (Q0 = '0' and Q1 = '0' and Q2 = '0' and Q3 = '0') 
-                    report "Count should be 0000 (wrapped), got " & std_logic'image(Q0) & std_logic'image(Q1) & std_logic'image(Q2) & std_logic'image(Q3) severity error;
-        end case;
-    end loop;
-    
-    -- Test 3: Reset after counting
-    report "=== Test 3: Reset after counting ===";
-    
-    -- Reset should clear counter
-    R01 <= '0';
-    R02 <= '0';
-    wait for 5 ns;
-    report "After reset - R01=" & std_logic'image(R01) & " R02=" & std_logic'image(R02);
-    report "Outputs - Q0=" & std_logic'image(Q0) & " Q1=" & std_logic'image(Q1) & 
-           " Q2=" & std_logic'image(Q2) & " Q3=" & std_logic'image(Q3);
-    
-    assert (Q0 = '0' and Q1 = '0' and Q2 = '0' and Q3 = '0') 
-        report "Counter should be reset to 0000" severity error;
-    
-    -- Release reset
-    R01 <= '1';
-    R02 <= '1';
-    wait for 5 ns;
-    report "After releasing reset - R01=" & std_logic'image(R01) & " R02=" & std_logic'image(R02);
-    report "Outputs - Q0=" & std_logic'image(Q0) & " Q1=" & std_logic'image(Q1) & 
-           " Q2=" & std_logic'image(Q2) & " Q3=" & std_logic'image(Q3);
-    
-    -- Test 4: Counting with CP1
-    report "=== Test 4: Counting with CP1 ===";
-    
-    -- Count a few cycles with CP1
-    for i in 0 to 3 loop
-        report "CP1 cycle " & integer'image(i) & " - Before clock";
-        report "CP0=" & std_logic'image(CP0) & " CP1=" & std_logic'image(CP1);
-        report "Outputs - Q0=" & std_logic'image(Q0) & " Q1=" & std_logic'image(Q1) & 
-               " Q2=" & std_logic'image(Q2) & " Q3=" & std_logic'image(Q3);
-        
-        CP1 <= '1';
-        wait for 5 ns;
-        report "CP1 cycle " & integer'image(i) & " - After clock high";
-        report "CP0=" & std_logic'image(CP0) & " CP1=" & std_logic'image(CP1);
-        report "Outputs - Q0=" & std_logic'image(Q0) & " Q1=" & std_logic'image(Q1) & 
-               " Q2=" & std_logic'image(Q2) & " Q3=" & std_logic'image(Q3);
-        
-        CP1 <= '0';
-        wait for 5 ns;
-        report "CP1 cycle " & integer'image(i) & " - After clock low";
-        report "CP0=" & std_logic'image(CP0) & " CP1=" & std_logic'image(CP1);
-        report "Outputs - Q0=" & std_logic'image(Q0) & " Q1=" & std_logic'image(Q1) & 
-               " Q2=" & std_logic'image(Q2) & " Q3=" & std_logic'image(Q3);
-        
-        -- Verify count value (corrected expectations)
-        case i is
-            when 0 => 
-                assert (Q0 = '1' and Q1 = '0' and Q2 = '0' and Q3 = '0') 
-                    report "Count should be 0001, got " & std_logic'image(Q0) & std_logic'image(Q1) & std_logic'image(Q2) & std_logic'image(Q3) severity error;
-            when 1 => 
-                assert (Q0 = '0' and Q1 = '1' and Q2 = '0' and Q3 = '0') 
-                    report "Count should be 0010, got " & std_logic'image(Q0) & std_logic'image(Q1) & std_logic'image(Q2) & std_logic'image(Q3) severity error;
-            when 2 => 
-                assert (Q0 = '1' and Q1 = '1' and Q2 = '0' and Q3 = '0') 
-                    report "Count should be 0011, got " & std_logic'image(Q0) & std_logic'image(Q1) & std_logic'image(Q2) & std_logic'image(Q3) severity error;
-            when 3 => 
-                assert (Q0 = '0' and Q1 = '0' and Q2 = '1' and Q3 = '0') 
-                    report "Count should be 0100, got " & std_logic'image(Q0) & std_logic'image(Q1) & std_logic'image(Q2) & std_logic'image(Q3) severity error;
-        end case;
-    end loop;
-    
-    -- Test 5: Reset with one input
-    report "=== Test 5: Reset with one input ===";
-    
-    -- Reset with only R01
-    R01 <= '0';
-    R02 <= '1';
-    wait for 5 ns;
-    report "After R01 reset - R01=" & std_logic'image(R01) & " R02=" & std_logic'image(R02);
-    report "Outputs - Q0=" & std_logic'image(Q0) & " Q1=" & std_logic'image(Q1) & 
-           " Q2=" & std_logic'image(Q2) & " Q3=" & std_logic'image(Q3);
-    
-    assert (Q0 = '0' and Q1 = '0' and Q2 = '0' and Q3 = '0') 
-        report "Counter should be reset with R01 only" severity error;
-    
-    -- Reset with only R02
-    R01 <= '1';
-    R02 <= '0';
-    wait for 5 ns;
-    report "After R02 reset - R01=" & std_logic'image(R01) & " R02=" & std_logic'image(R02);
-    report "Outputs - Q0=" & std_logic'image(Q0) & " Q1=" & std_logic'image(Q1) & 
-           " Q2=" & std_logic'image(Q2) & " Q3=" & std_logic'image(Q3);
-    
-    assert (Q0 = '0' and Q1 = '0' and Q2 = '0' and Q3 = '0') 
-        report "Counter should be reset with R02 only" severity error;
-    
-    -- Release reset
-    R01 <= '1';
-    R02 <= '1';
-    wait for 5 ns;
-    report "Final state - R01=" & std_logic'image(R01) & " R02=" & std_logic'image(R02);
-    report "Outputs - Q0=" & std_logic'image(Q0) & " Q1=" & std_logic'image(Q1) & 
-           " Q2=" & std_logic'image(Q2) & " Q3=" & std_logic'image(Q3);
-    
-    report "=== LS90 decade counter test completed successfully - all assertions passed! ===";
-    wait;
-end process;
+        MR2 <= '1'; wait for 2 ns;
+        report "After MR2=1: Q_vec=" & slv_to_str(Q_vec);
+        MR2 <= '0'; wait for 2 ns;
 
+        -- Test 2: Set functionality (set to 9)
+        report "Test 2: Set functionality (set to 9)";
+        MS1 <= '1'; wait for 2 ns;
+        report "After MS1=1: Q_vec=" & slv_to_str(Q_vec);
+        assert Q_vec = "1001" report "Counter should be 1001 after MS1 set" severity error;
+        MS1 <= '0'; wait for 2 ns;
+        
+        MS2 <= '1'; wait for 2 ns;
+        report "After MS2=1: Q_vec=" & slv_to_str(Q_vec);
+        MS2 <= '0'; wait for 2 ns;
+
+        -- Test 3: Count on CP0n (active low edge)
+        report "Test 3: Count on CP0n (active low edge)";
+        for i in 0 to 9 loop
+            clock_0;
+            wait for 1 ns;
+            report "After CP0n count " & integer'image(i) & ": Q_vec=" & slv_to_str(Q_vec);
+        end loop;
+
+        -- Test 4: Count on CP1n (active low edge)
+        report "Test 4: Count on CP1n (active low edge)";
+        for i in 0 to 9 loop
+            clock_1;
+            wait for 1 ns;
+            report "After CP1n count " & integer'image(i) & ": Q_vec=" & slv_to_str(Q_vec);
+        end loop;
+
+        -- Test 5: Reset during counting
+        report "Test 5: Reset during counting";
+        clock_0; clock_0; clock_0; -- Count to 3
+        report "Before reset: Q_vec=" & slv_to_str(Q_vec);
+        MR1 <= '1'; wait for 2 ns; MR1 <= '0'; wait for 2 ns;
+        report "After reset: Q_vec=" & slv_to_str(Q_vec);
+        assert Q_vec = "0000" report "Counter should be 0000 after reset" severity error;
+
+        report "All LS90 BCD counter tests completed.";
+        wait;
+    end process;
 end Behavioral; 

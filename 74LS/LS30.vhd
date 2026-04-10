@@ -2,16 +2,16 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
 --        74LS30
---       NAND Gate
+--     8-Input NAND Gate
 --       ___  ___
 --      |   \/   |
---  A1 -| 1   14 |- VCC
---  B1 -| 2   13 |- B4
---  Y1 -| 3   12 |- A4
---  A2 -| 4   11 |- Y4
---  B2 -| 5   10 |- B3
---  Y2 -| 6    9 |- A3
--- GND -| 7    8 |- Y3
+--   A -| 1   14 |- VCC
+--   B -| 2   13 |- NC
+--   C -| 3   12 |- H
+--   D -| 4   11 |- G
+--   E -| 5   10 |- NC
+--   F -| 6    9 |- NC
+-- GND -| 7    8 |- Y
 --      |________|
 
 entity LS30 is
@@ -37,6 +37,6 @@ architecture Behavioral of LS30 is
 
 begin
 
-P8_Y <= (((((((P1_A nand P2_B) nand P3_C) nand P4_D) nand P5_E) nand P6_F) nand P11_G) nand P12_H);
+P8_Y <= not(P1_A and P2_B and P3_C and P4_D and P5_E and P6_F and P11_G and P12_H);
 
 end Behavioral;

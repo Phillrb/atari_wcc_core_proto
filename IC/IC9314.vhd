@@ -71,10 +71,17 @@ begin
         end if;
     end process;
 
-    -- Output logic (3-state) - assign directly
-    P15_Q0 <= latch(0) when P1_OEn = '0' else 'Z';
-    P13_Q1 <= latch(1) when P1_OEn = '0' else 'Z';
-    P12_Q2 <= latch(2) when P1_OEn = '0' else 'Z';
-    P10_Q3 <= latch(3) when P1_OEn = '0' else 'Z';
+    -- Output logic (3-state in hardware; held in simulation)
+    -- Per 9314 datasheet: Master Reset overrides all other inputs including OE.
+    -- When MRn='0', outputs are driven LOW regardless of OEn.
+    -- When MRn='1' and OEn='0', outputs reflect latch contents.
+    -- When MRn='1' and OEn='1', hardware is tri-state; in simulation we hold latch
+    -- value (no other driver exists on these nodes in the WCC PCB, so the signal
+    -- would float at its last level -- outputting 'Z' propagates as 'U' through XOR
+    -- gates and corrupts downstream counters).
+    P15_Q0 <= '0'      when P9_MRn = '0' else latch(0);
+    P13_Q1 <= '0'      when P9_MRn = '0' else latch(1);
+    P12_Q2 <= '0'      when P9_MRn = '0' else latch(2);
+    P10_Q3 <= '0'      when P9_MRn = '0' else latch(3);
 
 end Behavioral; 

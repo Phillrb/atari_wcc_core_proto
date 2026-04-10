@@ -56,49 +56,31 @@ entity IC9316 is
 end IC9316;
 
 architecture Behavioral of IC9316 is
-    signal count : unsigned(3 downto 0) := (others => '0');
-    signal load_data : unsigned(3 downto 0);
-
-    -- Utility function for debug
-    function u4_to_str(u : unsigned) return string is
-        variable s : string(1 to 4);
-    begin
-        for i in 0 to 3 loop
-            s(4-i) := character'VALUE(std_ulogic'image(std_logic(u(i))));
-        end loop;
-        return s;
-    end function;
-
+    -- 74LS161-style: single count register, async clear, sync load, sync count
+    signal count : STD_LOGIC_VECTOR(3 downto 0) := "0000";
+    signal D     : STD_LOGIC_VECTOR(3 downto 0);  -- parallel load: D(0)=A(LSB), D(3)=D(MSB)
 begin
-    -- Parallel load data
-    load_data <= P6_D & P5_C & P4_B & P3_A;
+    D <= P6_D & P5_C & P4_B & P3_A;
 
-    -- Synchronous counter process with debug
     process(P2_CLK, P1_CLRn)
     begin
         if P1_CLRn = '0' then
-            count <= (others => '0');
-            report "[IC9316] Async clear: count=" & u4_to_str(count);
+            count <= "0000";                          -- Asynchronous clear
         elsif rising_edge(P2_CLK) then
             if P9_LDn = '0' then
-                count <= load_data;
-                report "[IC9316] Parallel load: load_data=" & u4_to_str(load_data) & " -> count=" & u4_to_str(load_data);
+                count <= D;                           -- Synchronous parallel load
             elsif (P7_CEP = '1' and P10_CET = '1') then
-                count <= count + 1;
-                report "[IC9316] Count increment: count=" & u4_to_str(count + 1);
-            else
-                report "[IC9316] No count: count=" & u4_to_str(count);
+                count <= std_logic_vector(unsigned(count) + 1);  -- Synchronous count
             end if;
         end if;
     end process;
 
-    -- Outputs (always driven)
-    P14_QA <= std_logic(count(0));
-    P13_QB <= std_logic(count(1));
-    P12_QC <= std_logic(count(2));
-    P11_QD <= std_logic(count(3));
+    P14_QA <= count(0);
+    P13_QB <= count(1);
+    P12_QC <= count(2);
+    P11_QD <= count(3);
 
-    -- Ripple carry: high when count is 1111 and both enables are high
-    P15_RC <= '1' when (count = "1111" and P7_CEP = '1' and P10_CET = '1') else '0';
+    -- RCO high when count is 15 (1111) and ENT (CET) is enabled
+    P15_RC <= '1' when (count = "1111" and P10_CET = '1') else '0';
 
 end Behavioral; 

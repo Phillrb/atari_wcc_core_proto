@@ -3,7 +3,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 --          9602
---   Dual Retriggerable, 
+--   Dual Retriggerable,
 --   Resettable One-Shot
 --        ___  ___
 --       |   \/   |
@@ -17,116 +17,96 @@ use IEEE.NUMERIC_STD.ALL;
 --  GND -| 8    9 |- Q2!
 --       |________|
 --
--- P1_CEXT1      : External timing capacitor 1
--- P2_REXT1      : External timing resistor/capacitor 1
--- P3_CLR1n      : Clear 1 (active low)
--- P4_B1         : Trigger B1 (active low)
--- P5_A1         : Trigger A1 (active high)
--- P6_Q1         : Q1 output
--- P7_Q1n        : Q1n output
--- P8_GND        : GND (not implemented)
--- P9_Q2n        : Q2n output
--- P10_Q2        : Q2 output
--- P11_A2        : Trigger A2 (active high)
--- P12_B2        : Trigger B2 (active low)
--- P13_CLR2n     : Clear 2 (active low)
--- P14_REXT2     : External timing resistor/capacitor 2
--- P15_CEXT2     : External timing capacitor 2
--- P16_VCC       : VCC (not implemented)
+-- Clock-driven implementation: pulse width in CLK cycles (no wait/delta storm).
+-- Trigger: A rising (0->1) OR B falling (1->0). CLK must be driven (e.g. HSYNC).
 
 entity IC9602 is
     generic (
-        PULSE_WIDTH_NS : time := 10 ns  -- Simulated pulse width
+        PULSE_WIDTH_CLKS  : integer := 1000;  -- Channel 1 pulse length in CLK cycles
+        PULSE_WIDTH_CLKS2  : integer := 1000   -- Channel 2 (default same)
     );
     Port (
-        P1_CEXT1   : in  STD_LOGIC := '0';
-        P2_REXT1   : in  STD_LOGIC := '0';
-        P3_CLR1n   : in  STD_LOGIC := '1';
-        P4_B1      : in  STD_LOGIC := '1';
-        P5_A1      : in  STD_LOGIC := '0';
-        P6_Q1      : out STD_LOGIC;
-        P7_Q1n     : out STD_LOGIC;
-        -- P8_GND  : in  STD_LOGIC := '0';
-        P9_Q2n     : out STD_LOGIC;
-        P10_Q2     : out STD_LOGIC;
-        P11_A2     : in  STD_LOGIC := '0';
-        P12_B2     : in  STD_LOGIC := '1';
-        P13_CLR2n  : in  STD_LOGIC := '1';
-        P14_REXT2  : in  STD_LOGIC := '0';
-        P15_CEXT2  : in  STD_LOGIC := '0'
-        -- P16_VCC : in  STD_LOGIC := '1'
+        CLK       : in  STD_LOGIC;  -- Clock for pulse timing (e.g. HSYNC)
+        P1_CEXT1  : in  STD_LOGIC := '0';
+        P2_REXT1  : in  STD_LOGIC := '0';
+        P3_CLR1n  : in  STD_LOGIC := '1';
+        P4_B1     : in  STD_LOGIC := '1';
+        P5_A1     : in  STD_LOGIC := '0';
+        P6_Q1     : out STD_LOGIC;
+        P7_Q1n    : out STD_LOGIC;
+        P9_Q2n    : out STD_LOGIC;
+        P10_Q2    : out STD_LOGIC;
+        P11_A2    : in  STD_LOGIC := '0';
+        P12_B2    : in  STD_LOGIC := '1';
+        P13_CLR2n : in  STD_LOGIC := '1';
+        P14_REXT2 : in  STD_LOGIC := '0';
+        P15_CEXT2 : in  STD_LOGIC := '0'
     );
 end IC9602;
 
 architecture Behavioral of IC9602 is
-    signal q1, q2 : std_logic := '0';
-    signal timer1, timer2 : time := 0 ns;
-    signal pulse_active1, pulse_active2 : boolean := false;
-    signal last_A1, last_B1, last_A2, last_B2 : std_logic := '0';
+    -- Channel 1
+    signal count1   : integer range 0 to PULSE_WIDTH_CLKS := 0;
+    signal active1  : std_logic := '0';
+    signal a1_sync  : std_logic_vector(1 downto 0) := "00";
+    signal b1_sync  : std_logic_vector(1 downto 0) := "11";
+    -- Channel 2
+    signal count2   : integer range 0 to PULSE_WIDTH_CLKS2 := 0;
+    signal active2  : std_logic := '0';
+    signal a2_sync  : std_logic_vector(1 downto 0) := "00";
+    signal b2_sync  : std_logic_vector(1 downto 0) := "11";
 
 begin
-    -- Monostable 1: Simple process
-    process
+    process(CLK, P3_CLR1n, P13_CLR2n)
     begin
-        wait for 1 ns;
+        -- Async clear per channel
         if P3_CLR1n = '0' then
-            if q1 = '1' or pulse_active1 then
-                report "[IC9602] Monostable 1 cleared at " & time'image(now);
-            end if;
-            q1 <= '0';
-            pulse_active1 <= false;
-            timer1 <= 0 ns;
-        elsif ((last_A1 = '0' and P5_A1 = '1') or (last_B1 = '1' and P4_B1 = '0')) then
-            if pulse_active1 then
-                report "[IC9602] Monostable 1 retriggered at " & time'image(now);
-            else
-                report "[IC9602] Monostable 1 triggered at " & time'image(now);
-            end if;
-            q1 <= '1';
-            pulse_active1 <= true;
-            timer1 <= now;
-        elsif pulse_active1 and (now - timer1 >= PULSE_WIDTH_NS) then
-            report "[IC9602] Monostable 1 pulse ended at " & time'image(now);
-            q1 <= '0';
-            pulse_active1 <= false;
+            count1  <= 0;
+            active1 <= '0';
+            a1_sync <= "00";
+            b1_sync <= "11";
         end if;
-        last_A1 <= P5_A1;
-        last_B1 <= P4_B1;
-    end process;
-
-    -- Monostable 2: Simple process
-    process
-    begin
-        wait for 1 ns;
         if P13_CLR2n = '0' then
-            if q2 = '1' or pulse_active2 then
-                report "[IC9602] Monostable 2 cleared at " & time'image(now);
-            end if;
-            q2 <= '0';
-            pulse_active2 <= false;
-            timer2 <= 0 ns;
-        elsif ((last_A2 = '0' and P11_A2 = '1') or (last_B2 = '1' and P12_B2 = '0')) then
-            if pulse_active2 then
-                report "[IC9602] Monostable 2 retriggered at " & time'image(now);
-            else
-                report "[IC9602] Monostable 2 triggered at " & time'image(now);
-            end if;
-            q2 <= '1';
-            pulse_active2 <= true;
-            timer2 <= now;
-        elsif pulse_active2 and (now - timer2 >= PULSE_WIDTH_NS) then
-            report "[IC9602] Monostable 2 pulse ended at " & time'image(now);
-            q2 <= '0';
-            pulse_active2 <= false;
+            count2  <= 0;
+            active2 <= '0';
+            a2_sync <= "00";
+            b2_sync <= "11";
         end if;
-        last_A2 <= P11_A2;
-        last_B2 <= P12_B2;
+        if rising_edge(CLK) then
+            -- Channel 1 edge sync: a1_sync(0)=previous A1, a1_sync(1)=current (after update below)
+            a1_sync <= a1_sync(0) & P5_A1;
+            b1_sync <= b1_sync(0) & P4_B1;
+
+            if (a1_sync = "01") or (b1_sync = "10") then  -- A1 rising or B1 falling
+                count1  <= PULSE_WIDTH_CLKS;
+                active1 <= '1';
+            elsif active1 = '1' then
+                if count1 > 0 then
+                    count1 <= count1 - 1;
+                else
+                    active1 <= '0';
+                end if;
+            end if;
+
+            a2_sync <= a2_sync(0) & P11_A2;
+            b2_sync <= b2_sync(0) & P12_B2;
+
+            if (a2_sync = "01") or (b2_sync = "10") then
+                count2  <= PULSE_WIDTH_CLKS2;
+                active2 <= '1';
+            elsif active2 = '1' then
+                if count2 > 0 then
+                    count2 <= count2 - 1;
+                else
+                    active2 <= '0';
+                end if;
+            end if;
+        end if;
     end process;
 
-    -- Output assignments
-    P6_Q1  <= q1;
-    P7_Q1n <= not q1;
-    P10_Q2 <= q2;
-    P9_Q2n <= not q2;
+    P6_Q1  <= active1;
+    P7_Q1n <= not active1;
+    P10_Q2 <= active2;
+    P9_Q2n <= not active2;
 
-end Behavioral; 
+end Behavioral;

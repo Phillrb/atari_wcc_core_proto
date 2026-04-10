@@ -631,8 +631,8 @@ located on the computer PWA.
 
 When the credit light is lit, the game is started by pressing the start pushbutton.
 Providing the attract move is active (<span class="over">ATRC</span> low), pressing and releasing the
-pushbutton sets ard resets flip-flop A8-10/C9~-10, causing a positive-going pulse
-to be applied to the D input of flip-flop B9-5. Flip-Flop A8-10/C9~-10 is used to
+pushbutton sets ard resets flip-flop A8-10/C9-10, causing a positive-going pulse
+to be applied to the D input of flip-flop B9-5. Flip-Flop A8-10/C9-10 is used to
 prevent transients that are produced by the contacts of the start pushbutton From
 disturbing the circuits of the computer PWA, If game credit has been established,
 flip-flop B9-5/6 is enabled by a high clear level from the credit circuit. Conse-
@@ -1329,3 +1329,4 @@ Figure 22. Video Summing Circuit
 
 
 
+OK

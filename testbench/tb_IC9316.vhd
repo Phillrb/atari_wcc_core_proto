@@ -2,6 +2,8 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
+-- Test IC9316 (74LS161-style): async clear, sync load (A=LSB, D=MSB), count, RC.
+
 entity tb_IC9316 is
 end tb_IC9316;
 
@@ -23,27 +25,6 @@ architecture test of tb_IC9316 is
     signal P15_RC   : std_logic;
     signal Q_vec    : std_logic_vector(3 downto 0);
 
-    component IC9316 is
-        Port (
-            P1_CLRn  : in  STD_LOGIC;
-            P2_CLK   : in  STD_LOGIC;
-            P3_A     : in  STD_LOGIC;
-            P4_B     : in  STD_LOGIC;
-            P5_C     : in  STD_LOGIC;
-            P6_D     : in  STD_LOGIC;
-            P7_CEP   : in  STD_LOGIC;
-            -- P8_GND : in  STD_LOGIC := '0';
-            P9_LDn   : in  STD_LOGIC;
-            P10_CET  : in  STD_LOGIC;
-            P11_QD   : out STD_LOGIC;
-            P12_QC   : out STD_LOGIC;
-            P13_QB   : out STD_LOGIC;
-            P14_QA   : out STD_LOGIC;
-            P15_RC   : out STD_LOGIC
-            -- P16_VCC : in  STD_LOGIC := '1'
-        );
-    end component;
-
     -- Utility function to print std_logic_vector as string
     function slv_to_str(slv : std_logic_vector) return string is
         variable result : string(1 to slv'length);
@@ -55,9 +36,10 @@ architecture test of tb_IC9316 is
     end function;
 
 begin
-    Q_vec <= P11_QD & P12_QC & P13_QB & P14_QA;
+    -- Q_vec(3)=QD (MSB), Q_vec(0)=QA (LSB) so to_integer gives correct 4-bit value
+    Q_vec <= (3 => P11_QD, 2 => P12_QC, 1 => P13_QB, 0 => P14_QA);
 
-    dut: IC9316
+    dut: entity work.IC9316
         port map (
             P1_CLRn  => P1_CLRn,
             P2_CLK   => P2_CLK,
@@ -85,57 +67,73 @@ begin
     begin
         report "Starting IC9316 testbench...";
 
+        -- Simple test: clear, then count 0->1->2 without load (verify increment)
+        P1_CLRn <= '0'; wait for 2 ns; P1_CLRn <= '1'; wait for 2 ns;
+        assert to_integer(unsigned(Q_vec)) = 0 report "After clear expect 0" severity error;
+        clock; wait for 2 ns;
+        assert to_integer(unsigned(Q_vec)) = 1 report "After 1st clock expect 1, got " & integer'image(to_integer(unsigned(Q_vec))) severity error;
+        clock; wait for 2 ns;
+        assert to_integer(unsigned(Q_vec)) = 2 report "After 2nd clock expect 2" severity error;
+
         -- Test async clear
         P1_CLRn <= '0'; wait for 2 ns;
         report "After async clear: Q_vec=" & slv_to_str(Q_vec);
         assert Q_vec = "0000" report "Counter should be 0000 after clear" severity error;
         P1_CLRn <= '1'; wait for 2 ns;
 
-        -- Test synchronous load
+        -- Test synchronous load (A=1,B=0,C=1,D=1 -> value 1101 = 13)
         P3_A <= '1'; P4_B <= '0'; P5_C <= '1'; P6_D <= '1';
         wait for 1 ns;
         P9_LDn <= '0';
         clock; -- load on rising edge
         P9_LDn <= '1';
-        report "After load 1101: Q_vec=" & slv_to_str(Q_vec);
-        assert Q_vec = "1101" report "Counter should be 1101 after load" severity error;
+        wait for 15 ns; -- ensure LDn is stable and we're past load clock before next clock
+        report "After load 1101: Q_vec=" & slv_to_str(Q_vec) & " val=" & integer'image(to_integer(unsigned(Q_vec)));
+        assert to_integer(unsigned(Q_vec)) = 13 report "Counter should be 1101 (13) after load, got " & slv_to_str(Q_vec) severity error;
 
-        -- Test counting with enables
+        -- Test counting with enables (1101 -> 1110 -> 1111 -> 0000 -> 0001 -> 0010)
         expected := "1101";
         for i in 1 to 5 loop
             clock;
+            wait for 2 ns; -- let outputs settle after clock
             if (P7_CEP = '1' and P10_CET = '1') then
                 expected := expected + 1;
             end if;
-            report "After count " & integer'image(i) & ": Q_vec=" & slv_to_str(Q_vec);
-            assert Q_vec = std_logic_vector(expected) report "Counter mismatch at count " & integer'image(i) severity error;
+            report "After count " & integer'image(i) & ": Q_vec=" & slv_to_str(Q_vec) & " (val=" & integer'image(to_integer(unsigned(Q_vec))) & ") expected " & integer'image(to_integer(expected));
+            assert to_integer(unsigned(Q_vec)) = to_integer(expected) report "Counter mismatch at count " & integer'image(i) severity error;
         end loop;
 
         -- Test disables: counter should not increment
         P7_CEP <= '0';
         clock;
+        wait for 2 ns;
         report "After CEP low: Q_vec=" & slv_to_str(Q_vec);
-        assert Q_vec = std_logic_vector(expected) report "Counter should not increment when CEP=0" severity error;
+        assert to_integer(unsigned(Q_vec)) = to_integer(expected) report "Counter should not increment when CEP=0" severity error;
         P7_CEP <= '1';
         P10_CET <= '0';
         clock;
+        wait for 2 ns;
         report "After CET low: Q_vec=" & slv_to_str(Q_vec);
-        assert Q_vec = std_logic_vector(expected) report "Counter should not increment when CET=0" severity error;
+        assert to_integer(unsigned(Q_vec)) = to_integer(expected) report "Counter should not increment when CET=0" severity error;
         P10_CET <= '1';
 
-        -- Test ripple carry
-        -- Set to 1110, count to 1111, check RC
+        -- Test ripple carry: load 1110, count to 1111, check RC, then count to 0000
         P3_A <= '0'; P4_B <= '1'; P5_C <= '1'; P6_D <= '1';
         wait for 1 ns;
         P9_LDn <= '0'; clock; P9_LDn <= '1';
+        wait for 2 ns;
         expected := "1110";
-        clock; expected := expected + 1;
+        clock;
+        wait for 2 ns;
+        expected := expected + 1; -- 1111
         report "After count to 1111: Q_vec=" & slv_to_str(Q_vec) & " RC=" & std_logic'image(P15_RC);
-        assert Q_vec = "1111" report "Counter should be 1111" severity error;
+        assert to_integer(unsigned(Q_vec)) = 15 report "Counter should be 1111 (15), got " & slv_to_str(Q_vec) severity error;
         assert P15_RC = '1' report "RC should be 1 when counter is 1111 and enables high" severity error;
-        clock; expected := expected + 1;
+        clock;
+        wait for 2 ns;
+        expected := expected + 1; -- 0000
         report "After overflow: Q_vec=" & slv_to_str(Q_vec) & " RC=" & std_logic'image(P15_RC);
-        assert Q_vec = "0000" report "Counter should wrap to 0000 after 1111" severity error;
+        assert to_integer(unsigned(Q_vec)) = 0 report "Counter should wrap to 0000 after 1111, got " & slv_to_str(Q_vec) severity error;
         assert P15_RC = '0' report "RC should be 0 after overflow" severity error;
 
         report "All tests completed for IC9316.";
