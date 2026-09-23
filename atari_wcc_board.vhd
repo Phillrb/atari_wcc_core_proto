@@ -1,4 +1,4 @@
--- Board top-level for atari_wcc: 50 MHz -> PLL -> 14.31818 MHz, MaSTer-style video output.
+-- Board top-level for atari_wcc: 50 MHz -> PLL -> 14.285714 MHz, MaSTer-style video output.
 -- Use this as Quartus top when targeting the EP2C5 board; same pinout as MaSTer games.
 -- Simulation continues to use atari_wcc directly with testbench-driven CLOCK_14.
 
@@ -19,6 +19,7 @@ end atari_wcc_board;
 
 architecture rtl of atari_wcc_board is
 	signal clock_14 : STD_LOGIC;
+	signal pushbtn_i : STD_LOGIC;
 	signal hsync    : STD_LOGIC;
 	signal vsync    : STD_LOGIC;
 	signal csync    : STD_LOGIC;
@@ -26,7 +27,9 @@ architecture rtl of atari_wcc_board is
 	signal clk7_dbg : STD_LOGIC;
 	signal hblank   : STD_LOGIC;
 begin
-	-- PLL: 50 MHz -> 14.318180 MHz (same stack as MaSTer)
+	-- Board button is active low; preserve the core's active-high button interface.
+	pushbtn_i <= not Reset_I;
+	-- PLL: 50 MHz -> 14.285714 MHz (same stack as MaSTer)
 	PLL: entity work.clk_pll
 		port map(
 			inclk0 => Clk_50_I,
@@ -43,7 +46,7 @@ begin
 			VIDEO      => video,
 			CLOCK_7_DBG => clk7_dbg,
 			HBLANK_DBG  => hblank,
-			PushBtn    => not Reset_I,
+			PushBtn    => pushbtn_i,
 			LED0       => LED0,
 			Clock_out  => Clock_out
 		);

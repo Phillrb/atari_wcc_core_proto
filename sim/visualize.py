@@ -308,8 +308,12 @@ def main():
         print("Writing animated GIF...")
         write_animated_gif(frames, filename="gameplay.gif", scale=1, delay_ms=100)
 
-    # Also render a single representative still (second-to-last complete frame)
+    # Also render a single representative still (second-to-last complete frame
+    # by default, or the index passed as --frame=N).
     frame_idx = max(len(frames) - 2, 0)
+    for arg in sys.argv[1:]:
+        if arg.startswith("--frame="):
+            frame_idx = max(0, min(int(arg.split("=", 1)[1]), len(frames) - 1))
     frame = frames[frame_idx]
     print(f"  Using frame {frame_idx}: {len(frame)} scanlines, "
           f"max {max(len(l) for l in frame)} pixels/line")

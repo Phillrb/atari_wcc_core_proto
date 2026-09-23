@@ -38,7 +38,7 @@
 
 set_global_assignment -name FAMILY "Cyclone II"
 set_global_assignment -name DEVICE EP2C5T144C8
-set_global_assignment -name TOP_LEVEL_ENTITY atari_wcc
+set_global_assignment -name TOP_LEVEL_ENTITY atari_wcc_board
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION "13.0 SP1"
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "17:05:04  AUGUST 24, 2022"
 set_global_assignment -name LAST_QUARTUS_VERSION "13.0 SP1"
@@ -50,22 +50,70 @@ set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
-set_location_assignment PIN_3 -to LED0
-set_location_assignment PIN_7 -to LED1
-set_location_assignment PIN_9 -to LED2
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
-set_location_assignment PIN_144 -to PushBtn
 set_global_assignment -name EDA_SIMULATION_TOOL "ModelSim-Altera (VHDL)"
 set_global_assignment -name EDA_OUTPUT_DATA_FORMAT VHDL -section_id eda_simulation
-set_location_assignment PIN_17 -to Clock_50
-set_location_assignment PIN_74 -to CSync_out
+set_global_assignment -name VHDL_FILE Altera/clk_pll.vhd
+set_global_assignment -name VHDL_FILE PlayersMultiplexer.vhd
+set_global_assignment -name VHDL_FILE CreditCircuit.vhd
+set_global_assignment -name VHDL_FILE PlayersSolidForwards.vhd
+set_global_assignment -name VHDL_FILE WindowMissBounce.vhd
+set_global_assignment -name VHDL_FILE PlayersSolidDefenseGoalie.vhd
+set_global_assignment -name VHDL_FILE HorizontalSync.vhd
+set_global_assignment -name VHDL_FILE VerticalSync.vhd
+set_global_assignment -name VHDL_FILE StartCircuit.vhd
+set_global_assignment -name VHDL_FILE TimeLineCircuit.vhd
+set_global_assignment -name VHDL_FILE VerticalDirectionAndSpeed.vhd
+set_global_assignment -name VHDL_FILE PlayersRampGenerator.vhd
+set_global_assignment -name VHDL_FILE PlayersStripedForwards.vhd
+set_global_assignment -name VHDL_FILE BallMotionCircuit.vhd
+set_global_assignment -name VHDL_FILE ScoreCircuit.vhd
+set_global_assignment -name VHDL_FILE ComputerClock.vhd
+set_global_assignment -name VHDL_FILE PlayersSumming.vhd
+set_global_assignment -name VHDL_FILE GameSelectCircuit.vhd
+set_global_assignment -name VHDL_FILE CatchKickHorizontalDirection.vhd
+set_global_assignment -name VHDL_FILE PlayfieldCircuit.vhd
+set_global_assignment -name VHDL_FILE PlayersVerticalWindow.vhd
+set_global_assignment -name VHDL_FILE atari_wcc_board.vhd
+set_global_assignment -name VHDL_FILE PlayersStripedDefenseGoalie.vhd
+set_global_assignment -name VHDL_FILE HorizontalDirectionAndSpeed.vhd
+set_global_assignment -name VHDL_FILE ElectronicLatchCircuit.vhd
+set_global_assignment -name VHDL_FILE SyncSumming.vhd
+set_global_assignment -name VHDL_FILE ServeTimingCircuit.vhd
+set_global_assignment -name VHDL_FILE 74LS/LS153.vhd
+set_global_assignment -name VHDL_FILE 74LS/LS107.vhd
+set_global_assignment -name VHDL_FILE 74LS/LS93.vhd
+set_global_assignment -name VHDL_FILE 74LS/LS92.vhd
+set_global_assignment -name VHDL_FILE 74LS/LS90.vhd
+set_global_assignment -name VHDL_FILE 74LS/LS86.vhd
+set_global_assignment -name VHDL_FILE 74LS/LS83.vhd
+set_global_assignment -name VHDL_FILE 74LS/LS48.vhd
+set_global_assignment -name VHDL_FILE 74LS/LS30.vhd
+set_global_assignment -name VHDL_FILE 74LS/LS27.vhd
+set_global_assignment -name VHDL_FILE 74LS/LS20.vhd
+set_global_assignment -name VHDL_FILE 74LS/LS10.vhd
+set_global_assignment -name VHDL_FILE 74LS/LS08.vhd
+set_global_assignment -name VHDL_FILE 74LS/LS02.vhd
+set_global_assignment -name VHDL_FILE 74LS/LS00.vhd
 set_global_assignment -name VHDL_FILE IC/jkff.vhd
 set_global_assignment -name VHDL_FILE IC/dff.vhd
 set_global_assignment -name VHDL_FILE 74LS/LS74.vhd
 set_global_assignment -name VHDL_FILE 74LS/LS04.vhd
 set_global_assignment -name VHDL_FILE atari_wcc.vhd
-set_global_assignment -name VHDL_FILE components_pkg.vhd
-set_location_assignment PIN_73 -to Clock_out
-set_location_assignment PIN_72 -to CLOCK_14
+set_global_assignment -name VHDL_FILE IC/IC9602.vhd
+set_global_assignment -name VHDL_FILE IC/IC9316.vhd
+set_global_assignment -name VHDL_FILE IC/IC9314.vhd
+
+# EP2C5 board oscillator and composite-video pins: Sprint2v1/sprint2.
+set_location_assignment PIN_17 -to Clk_50_I
+set_location_assignment PIN_144 -to Reset_I
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to Reset_I
+set_location_assignment PIN_92 -to Sync_O
+set_location_assignment PIN_86 -to VideoW_O
+set_location_assignment PIN_74 -to VideoB_O
+set_location_assignment PIN_3 -to LED0
+set_location_assignment PIN_80 -to Clock_out
+set_global_assignment -name SDC_FILE atari_wcc.sdc
+
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

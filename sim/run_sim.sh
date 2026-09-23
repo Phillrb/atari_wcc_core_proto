@@ -75,6 +75,7 @@ ghdl -a --std=93 "$ROOT/HorizontalDirectionAndSpeed.vhd"
 ghdl -a --std=93 "$ROOT/ServeTimingCircuit.vhd"
 ghdl -a --std=93 "$ROOT/BallMotionCircuit.vhd"
 ghdl -a --std=93 "$ROOT/TimeLineCircuit.vhd"
+ghdl -a --std=93 "$ROOT/ScoreCircuit.vhd"
 ghdl -a --std=93 "$ROOT/atari_wcc.vhd"
 
 # Testbench
@@ -83,9 +84,9 @@ ghdl -a --std=93 "$ROOT/testbench/tb_atari_wcc.vhd"
 # Elaborate
 ghdl -e --std=93 tb_atari_wcc
 
-# Run until testbench stops (after 2 frames, ~40 ms) or STOP_MS max. Set STOP_MS=900 for long runs.
-STOP_MS=${STOP_MS:-100}
-echo "[2/3] Running simulation (stop after 2 frames or ${STOP_MS} ms)..."
+# Default 300 ms covers: pre-serve, post-serve, +5 frames, +10 frames (frame 13 ≈ 250 ms).
+STOP_MS=${STOP_MS:-300}
+echo "[2/3] Running simulation (${STOP_MS} ms)..."
 ghdl -r --std=93 tb_atari_wcc --stop-time=${STOP_MS}ms 2>&1 || true
 
 # Check output
@@ -97,18 +98,31 @@ fi
 LINES=$(wc -l < frame_data.txt)
 echo "  Generated $LINES samples in frame_data.txt"
 
-echo "[3/3] Launching visualizer..."
-python3 visualize.py
-
-# Ensure PNG exists for viewing (visualize.py writes it via Pillow; fallback: convert PPM)
-if [ ! -f frame_output.png ] && [ -f frame_output.ppm ]; then
-    if command -v convert >/dev/null 2>&1; then
-        echo "Converting PPM to PNG (install Pillow for direct PNG: pip3 install Pillow)"
-        convert frame_output.ppm frame_output.png
-    else
-        echo "No frame_output.png (install Pillow: pip3 install Pillow; or ImageMagick for convert)"
+echo "[3/3] Rendering keyframes..."
+# Reconstructed frames are ~19.3 ms each in this design's sync timing.
+#   1     = first complete frame; SERVE has just gone high, ball not yet visible
+#   3     = ball clearly on playfield, scores still 0-0 (post-serve)
+#   4..8  = +1..+5 frames after post-serve (each ~19 ms apart)
+render_frame() {
+    local idx=$1
+    local out=$2
+    python3 visualize.py --frame=${idx} >/dev/null
+    if [ -f frame_output.png ]; then
+        mv -f frame_output.png "${out}"
+        echo "  Wrote ${out} (frame ${idx})"
     fi
-fi
+}
+
+render_frame 1 frame_initial.png
+render_frame 3 frame_post_serve.png
+render_frame 4 frame_plus1.png
+render_frame 5 frame_plus2.png
+render_frame 6 frame_plus3.png
+render_frame 7 frame_plus4.png
+render_frame 8 frame_plus5.png
+
+# Leave frame_output.png at the last rendered frame so existing tooling still finds something.
+cp -f frame_plus5.png frame_output.png 2>/dev/null || true
 
 echo ""
 echo "=== Done ==="

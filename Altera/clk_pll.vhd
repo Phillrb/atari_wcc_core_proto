@@ -1,6 +1,7 @@
--- PLL: 50 MHz board clock -> 14.318180 MHz (CLOCK_14 for Goal IV / atari_wcc).
+-- PLL: 50 MHz board clock -> 14.285714 MHz (CLOCK_14 for Goal IV / atari_wcc).
+-- Exact WCC target is 14.318182 MHz; this legal Cyclone II ratio is 0.2268% slow.
 -- Same pattern as MaSTer projects (e.g. Dominos). Use for board build; sim uses testbench clock.
--- 50 * 756 / 2640 = 14.3181818... MHz.
+-- 50 * 2 / 7 = 14.2857142857... MHz.
 
 LIBRARY ieee;
 USE ieee.std_logic_1164.all;
@@ -95,9 +96,9 @@ BEGIN
 
 	altpll_component : altpll
 	GENERIC MAP (
-		clk0_divide_by => 2640,
+		clk0_divide_by => 7,
 		clk0_duty_cycle => 50,
-		clk0_multiply_by => 756,
+		clk0_multiply_by => 2,
 		clk0_phase_shift => "0",
 		compensate_clock => "CLK0",
 		inclk0_input_frequency => 20000,
