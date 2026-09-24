@@ -100,6 +100,7 @@ set_global_assignment -name VHDL_FILE IC/jkff.vhd
 set_global_assignment -name VHDL_FILE IC/dff.vhd
 set_global_assignment -name VHDL_FILE 74LS/LS74.vhd
 set_global_assignment -name VHDL_FILE 74LS/LS04.vhd
+set_global_assignment -name VHDL_FILE SoundCircuit.vhd
 set_global_assignment -name VHDL_FILE atari_wcc.vhd
 set_global_assignment -name VHDL_FILE IC/IC9602.vhd
 set_global_assignment -name VHDL_FILE IC/IC9316.vhd
@@ -114,6 +115,8 @@ set_location_assignment PIN_86 -to VideoW_O
 set_location_assignment PIN_74 -to VideoB_O
 set_location_assignment PIN_3 -to LED0
 set_location_assignment PIN_80 -to Clock_out
+# Mono sound on Sprint2 Audio1_O connector (Audio2_O is unused).
+set_location_assignment PIN_71 -to Audio1_O
 set_global_assignment -name SDC_FILE atari_wcc.sdc
 
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

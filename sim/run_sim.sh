@@ -76,6 +76,7 @@ ghdl -a --std=93 "$ROOT/ServeTimingCircuit.vhd"
 ghdl -a --std=93 "$ROOT/BallMotionCircuit.vhd"
 ghdl -a --std=93 "$ROOT/TimeLineCircuit.vhd"
 ghdl -a --std=93 "$ROOT/ScoreCircuit.vhd"
+ghdl -a --std=93 "$ROOT/SoundCircuit.vhd"
 ghdl -a --std=93 "$ROOT/atari_wcc.vhd"
 
 # Testbench

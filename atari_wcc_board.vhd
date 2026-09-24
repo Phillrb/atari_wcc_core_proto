@@ -13,6 +13,7 @@ entity atari_wcc_board is
 		VideoW_O   : out STD_LOGIC;
 		VideoB_O   : out STD_LOGIC;
 		LED0       : out STD_LOGIC;
+		Audio1_O   : out STD_LOGIC; -- Sprint2 audio connector, FPGA pin 71
 		Clock_out  : out STD_LOGIC
 	);
 end atari_wcc_board;
@@ -48,6 +49,7 @@ begin
 			HBLANK_DBG  => hblank,
 			PushBtn    => pushbtn_i,
 			LED0       => LED0,
+			SOUND_OUT  => Audio1_O,
 			Clock_out  => Clock_out
 		);
 

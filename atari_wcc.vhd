@@ -17,7 +17,8 @@ entity atari_wcc is
 		HBLANK_DBG  : out STD_LOGIC;
 		PushBtn     : in  STD_LOGIC;
 		LED0        : out STD_LOGIC;
-		Clock_out   : out STD_LOGIC
+		Clock_out   : out STD_LOGIC;
+		SOUND_OUT   : out STD_LOGIC
 	);
 end atari_wcc;
 
@@ -88,6 +89,8 @@ signal video_timeline   : STD_LOGIC;
 signal score_i          : STD_LOGIC;
 signal start_i          : STD_LOGIC;    -- score counter reset (active high)
 signal start_n_i        : STD_LOGIC;    -- inverted START (active low)
+
+signal sound_goal_i, sound_goaln_i, score_sound_n_i : STD_LOGIC;
 
 signal miss_armed       : STD_LOGIC := '1';
 signal miss_prev        : STD_LOGIC := '0';
@@ -313,7 +316,7 @@ U_SERVE: entity work.ServeTimingCircuit
 	)
 	port map(
 		CLOCK_7       => clk7,
-		GOALn         => '1',
+		GOALn         => sound_goaln_i,
 		START         => '0',
 		V128n         => v128n_i,
 		H_ENABLE      => henab_i,
@@ -425,14 +428,23 @@ U_CATCH_KICK: entity work.CatchKickHorizontalDirection
 		HORIZ_DIR_Qn  => horiz_dir_qn_i
 	);
 
+-- Figure 20. Core currently forces play mode elsewhere, so E7 pin 2 is HIGH.
+-- Do not use atrcn_i here: that legacy net is LOW during play despite its name.
+U_SOUND: entity work.SoundCircuit
+ generic map(CLOCK_HZ => 7142857) -- actual board PLL / 2 and testbench clock
+ port map(CLOCK_7=>clk7, MISS=>miss_i, HIT=>hit_i, STOPn=>stopn_i,
+ SLOW=>slow_i, HIT_TONE=>hit_tone_i, V32=>v32_i, BOUNCEn=>bounce_n_i,
+ ATRCn=>'1', GOAL=>sound_goal_i, GOALn=>sound_goaln_i,
+ SCORE_SOUNDn=>score_sound_n_i, SOUND_OUT=>SOUND_OUT);
+
 -- Horizontal Direction and Speed
 U_HORIZ_SPEED: entity work.HorizontalDirectionAndSpeed
 	port map(
 		VRESET         => vreset_i,
 		STOPn          => stopn_i,
 		HORIZ_DIR      => horiz_dir_qn_i,
-		GOAL           => '0',
-		SCORE_SOUNDn   => '1',
+		GOAL           => sound_goal_i,
+		SCORE_SOUNDn   => score_sound_n_i,
 		ONE_PLAYER     => '0',
 		ATRC           => '0',
 		GOALIE_FWD_HIT => '1',

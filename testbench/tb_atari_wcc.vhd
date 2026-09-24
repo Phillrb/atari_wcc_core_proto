@@ -10,6 +10,7 @@ architecture Behavioral of tb_atari_wcc is
 -- Match board PLL: 50 MHz * 2/7 = 14.285714 MHz (70 ns period).
 constant CLK_HALF : time := 35 ns;
 
+signal audio_o : STD_LOGIC;
 signal clk14     : STD_LOGIC := '0';
 signal hsync_o   : STD_LOGIC;
 signal vsync_o   : STD_LOGIC;
@@ -40,6 +41,7 @@ DUT: entity work.atari_wcc
 		HBLANK_DBG  => hblank_dbg,
 		PushBtn     => '0',
 		LED0        => open,
+		SOUND_OUT   => audio_o,
 		Clock_out   => open
 	);
 
