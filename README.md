@@ -2,7 +2,7 @@
 
 This project is a VHDL recreation of the classic 1974 discrete logic arcade game known as 'World Cup', 'World Cup Football', 'Coupe du Monde' or 'Goal IV' by Atari. The original PCB is marked 'WCC' and was assigned the working ID 'TM-035'.
 
-> **Status: Running in simulation and on FPGA hardware; video output tested successfully.**
+> **Status: Running in simulation and on FPGA hardware; video output tested successfully. Sound implemented and simulation-tested.**
 > Quartus synthesis and fitting have passed for the Cyclone II EP2C5T144C8 board. The project owner confirmed on 24 September 2026 that the hardware video output looks good. GHDL simulation and the Python visualizer remain available for development. Full game integration is still in progress; this hardware check validates the displayed output, not every gameplay function.
 
 ## Current Implementation Status
@@ -14,7 +14,7 @@ This project is a VHDL recreation of the classic 1974 discrete logic arcade game
 | Phase 2 | Game control: electronic latch, credit, start, game select, time line, serve timing | Exists — needs review/verification |
 | Phase 3 | Ball system: motion, direction & speed, catch/kick, window/miss/bounce | **Done** |
 | Phase 4 | Players: all forwards, defense/goalie (solid + striped), ramp, mux, summing | **Done** |
-| Phase 5 | Score circuit, sound circuit, moving hole | Score circuit implemented and integrated; sound and moving hole remain unimplemented |
+| Phase 5 | Score circuit, sound circuit, moving hole | Score circuit implemented and integrated; sound (Fig 20) implemented, integrated and simulation-tested; moving hole remains unimplemented |
 | Phase 6 | Video output and board integration | Board wrapper, PLL and composite output integrated; synthesis/fitting passed and hardware video tested. Original Fig 22 resistor network recreation remains outstanding |
 
 See [AGENTS.md](AGENTS.md) for the full circuit-by-circuit breakdown.
@@ -58,6 +58,8 @@ Requires Python 3 with `Pillow`: `pip3 install Pillow`
 
 For VCD waveform debugging, add `--vcd=atari_wcc.vcd` to the GHDL run command in `run_sim.sh`.
 
+Sound regression tests can be run from the repository root with `bash sim/run_sound_tests.sh`. See [Figure 20 sound circuit notes](docs/SOUND_CIRCUIT_FIG20.md) for coverage and timing estimates.
+
 ## Board Build and Hardware Status
 
 Use `atari_wcc_board` as the Quartus top-level for the Cyclone II EP2C5T144C8:
@@ -69,6 +71,8 @@ quartus_sh --flow compile atari_wcc
 The board's 50 MHz oscillator feeds a PLL configured for **14.285714 MHz** (multiply 2, divide 7), giving a **7.142857 MHz** pixel clock. This is approximately 0.2268% slower than the original 14.318180 MHz master clock; the simulation testbench uses the same 70 ns period as the board configuration.
 
 The wrapper uses the Sprint2/MaSTer composite-video connections and an external resistor network. Synthesis and fitting passed on 23 September 2026, using 764 of 4,608 logic elements. Hardware video was subsequently tested and reported to look good. Remaining timing-constraint warnings still require review; the visual test does not establish full timing closure.
+
+Sound output is connected to `Audio1_O` on **FPGA pin 71**. The sound-integrated build passes Quartus compilation and fitting, but TimeQuest reports timing violations and incomplete constraints; timing closure remains outstanding. A hardware listening test and integration with the real attract-mode controls are still pending. M9 hit-sound timings remain adjustable estimates. See [sound implementation and validation](docs/SOUND_CIRCUIT_FIG20.md).
 
 See [board clock, pinout and build details](docs/MASTER_CLOCK_AND_VIDEO_ADOPTION.md).
 
