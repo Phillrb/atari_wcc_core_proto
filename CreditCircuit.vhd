@@ -2,7 +2,7 @@
 --
 -- Coin switch debounce (A8-4/2), 32V delay counter (B8-5/6, B8-9/8), NAND C8-8,
 -- 1P/2P flip-flops A9-5 and A9-9/8, NOR C9-13, inverter A8-8 (credit LED).
--- README: A8=LS04, B8=LS74, C8=LS00, C9=LS27, A9=LS74.
+-- README: A8=LS04, B8=LS74, C8=LS00, C9=LS02, A9=LS74.
 --
 -- Coin in -> debounce high -> count 3 x 32V -> C8-8 low -> clear A9-5/A9-9/8,
 -- trigger electronic latch, release start. A9-9/8 clocked by ATRC (game over);
@@ -26,7 +26,7 @@ entity CreditCircuit is
 	);
 end CreditCircuit;
 
-architecture Behavioral of CreditCircuit is
+architecture Structural of CreditCircuit is
 	-- Coin debounce: high while coin in (manual: A8-4/2)
 	signal debounce_Q   : STD_LOGIC := '0';
 	-- B8 counter: two FFs, clocked by V32, cleared when debounce low
@@ -43,12 +43,13 @@ architecture Behavioral of CreditCircuit is
 	signal A9_9_8_Q    : STD_LOGIC;
 	signal A9_9_8_Qn   : STD_LOGIC;
 	signal C9_13_out   : STD_LOGIC;
+	signal one_play_setn : STD_LOGIC;
 begin
-	-- Debounce: level-sensitive (coin switch closed = high)
+	-- Settled contact-latch state supplied by JammaSwitchAdapter (high = actuated)
 	debounce_Q <= COIN_SWITCH;
 
-	-- B8 (LS74): 2-bit counter, clocked by V32, clear when debounce low
-	-- FF1: toggle (D1 = Q1n); FF2: D2 = Q1
+	-- B8 (LS74): ripple counter; V32 -> FF1, Q1n -> FF2; both D=Qn
+	-- FF1/FF2 toggle; count three qualifies the coin
 	B8_clrn <= debounce_Q;
 	U_B8: entity work.LS74
 		port map(
@@ -61,8 +62,8 @@ begin
 			P8_Q2n    => B8_Q2n,
 			P9_Q2     => B8_Q2,
 			P10_SET2n => '1',
-			P11_CLK2  => V32,
-			P12_D2    => B8_Q1,
+			P11_CLK2  => B8_Q1n,
+			P12_D2    => B8_Q2n,
 			P13_CLR2n => B8_clrn
 		);
 
@@ -84,17 +85,21 @@ begin
 		);
 
 	-- Coin-accepted pulse for Latch: high when C8-8 output is low
-	COIN_ACCEPTED_PULSE <= not C8_8_out;
+	-- Polarity/interface conversion (not an additional original PCB gate).
+    U_INTERFACE: entity work.LS04 port map(
+        P1_A1=>C8_8_out, P2_Y1=>COIN_ACCEPTED_PULSE,
+        P3_A2=>ONE_PLAYER, P4_Y2=>one_play_setn,
+        P6_Y3=>open, P8_Y4=>open, P10_Y5=>open, P12_Y6=>open);
 
 	-- A9 (LS74): first FF = A9-5 (1P/2P), second FF = A9-9/8 (credit expired)
-	-- A9-5: D = ONE_PLAYER, CLK = V256, CLRn = C8_8_out (clear on coin)
+	-- A9-5: D=1, CLK=ATRC; S1 presets Q for one play; coin clears for two plays
 	-- A9-9/8: D = A9_5_Q, CLK = ATRC, CLRn = C8_8_out, SET2n = LATCH_PRESETn (preset at power on)
 	U_A9: entity work.LS74
 		port map(
 			P1_CLR1n  => C8_8_out,
-			P2_D1     => ONE_PLAYER,
-			P3_CLK1   => V256,
-			P4_SET1n  => '1',
+			P2_D1     => '1',
+			P3_CLK1   => ATRC,
+			P4_SET1n  => one_play_setn,
 			P5_Q1     => A9_5_Q,
 			P6_Q1n    => A9_5_Qn,
 			P8_Q2n    => A9_9_8_Qn,
@@ -107,25 +112,13 @@ begin
 
 	CREDIT_EXPIRED <= A9_9_8_Q;
 
-	-- C9-13 (LS27): NOR(A9_9_8_Q, debounce_Q); high = credit (can start) when no coin in and credit not expired
-	U_C9_13: entity work.LS27
-		port map(
-			P1_A1  => A9_9_8_Q,
-			P2_B1  => debounce_Q,
-			P13_C1 => '0',
-			P3_A2  => '0',
-			P4_B2  => '0',
-			P5_C2  => '0',
-			P9_A3  => '0',
-			P10_B3 => '0',
-			P11_C3 => '0',
-			P6_Y2  => open,
-			P8_Y3  => open,
-			P12_Y1 => C9_13_out
-		);
+    -- Figure 8 C9 gate 4 is a 7402, pins 11/12 -> 13.
+    U_C9_13: entity work.LS02 port map(
+        P11_A4=>A9_9_8_Q, P12_B4=>debounce_Q, P13_Y4=>C9_13_out,
+        P1_Y1=>open, P4_Y2=>open, P10_Y3=>open);
 
 	CREDIT <= C9_13_out;
 
 	-- A8-8 (LS04): inverts for credit LED; we output CREDIT (high = light on) directly
 	-- LED drive would be A8-8 output = not C9_13_out; not needed as separate port
-end Behavioral;
+end Structural;

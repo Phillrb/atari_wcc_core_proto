@@ -62,11 +62,11 @@ GOALn connects to ServeTimingCircuit. SOUND_OUT reaches board Audio1_O,
 **FPGA pin 71**, copied from `MaSTer/Sprint2v1/sprint2/sprint2.qsf`.
 Sprint2's second audio output (pin 72) is unused.
 
-The core still forces play mode. Its legacy `atrcn_i` is low during play,
-contrary to Figure 20's required polarity; sound's ATRCn is explicitly tied
-high in this integration. Circuit-level muting is tested, but integration with
-real game-control attract logic remains pending. The existing custom serve
-process still controls the ball instead of the ServeTimingCircuit outputs.
+The core now receives ATRC/ATRCn from Figure 8's StartCircuit. Sound's ATRCn
+is high during play and low during attract; full-core simulation verifies mute
+on power-up and after time expiry. ServeTimingCircuit now controls the ball,
+with pin-accurate J5 triggers and three-second board defaults. See
+[JAMMA/game-control integration](JAMMA_GAME_CONTROL.md).
 The existing tied GOALIE_FWD_HIT input also prevents exercising full speed
 progression in gameplay; both SLOW states are tested independently here.
 

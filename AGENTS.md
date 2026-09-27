@@ -123,18 +123,18 @@ cd sim && bash run_sim.sh
 This compiles all VHDL (74LS library, IC library, design files, testbench), runs GHDL for the configured duration, and calls `visualize.py` to produce `frame_output.png`.
 
 ### Run behaviour
-The testbench stops after 500 frames (or 60 s safety timeout); override with `STOP_MS=900` (or similar) to control run length. The visualizer produces `frame_output.png` (requires Pillow) and `gameplay.gif` (animated, all complete frames) when >2 frames are present.
+The default capture is 650 ms, with testbench-driven coin/start and accelerated timer/serve generics. Override with `STOP_MS=900` (or similar); the safety limits remain 500 frames / 60 s. The visualizer produces `frame_output.png` (requires Pillow) and `gameplay.gif` (animated, all complete frames) when >2 frames are present.
 
 ### Output Files
 | File | Purpose |
 |------|---------|
 | `sim/frame_data.txt` | Raw samples: `HSYNC VSYNC HBLANK VIDEO` at 7.159 MHz |
-| `sim/frame_output.png` | Rendered still frame (second-to-last complete frame, 2x scale, green phosphor) |
+| `sim/frame_output.png` | Paid-play frame (index 20, 2x scale, green phosphor) |
 | `sim/gameplay.gif` | Animated GIF of all complete frames (1x scale, 100 ms/frame) |
 | `sim/frame_output.ppm` | Written only when `--ppm` flag is passed to visualize.py |
 
 ### Current sim output (limitations)
-Ball rendering is **enabled** in `atari_wcc.vhd` (`VIDEO <= ... or (ball_i and hblankn_i)`). The serve process fires at t=13ms; the ball circuit takes ~19ms after serve to stabilise (B3_Q1 phase flip-flop needs D4 to first cycle to 15). Ball is visible from frame 5 onward (t>=80ms). The visualizer now picks the second-to-last frame to show a fully-stabilised ball position.
+Ball rendering is enabled. The board now boots into attract and uses Figure 8 coin/start control and Figure 12 serve timing. Coin1_I (pin 120) and Start1_I (pin 112) are active-low NO inputs with pull-ups and 5 ms debounce. Board games last two minutes, with three-second serve/catch timing; simulation supplies coin/start and accelerates these to 300 ms / 50 ms. See [docs/JAMMA_GAME_CONTROL.md](docs/JAMMA_GAME_CONTROL.md). The custom 13 ms serve process has been removed.
 
 **Ball diagonal shape is hardware-accurate**: 374 active clocks per line (H=80..453) is not divisible by 8 (the C4 counter range), so the ball window drifts horizontally by 6px each scanline. This is inherent TTL behaviour masked by CRT phosphor persistence on the original hardware. No fix needed or possible without changing the counter architecture.
 
@@ -251,12 +251,12 @@ Timing: 455 clocks/scanline, 313 lines/frame, 50.27 Hz (PAL).
 
 | Circuit | File | Figure | ICs | Status |
 |---------|------|--------|-----|--------|
-| Electronic Latch | ElectronicLatchCircuit.vhd | Fig 8 | A8(LS04), transistors Q1-Q3 | Exists, models transistor latch as FF. Review needed. |
-| Credit | CreditCircuit.vhd | Fig 8 | A8(LS04), B8(LS74), C8(LS00), C9(LS27), A9(LS74) | Exists. Review needed. |
-| Start | StartCircuit.vhd | Fig 8 | A8(LS04), C9(LS02), B9(LS74) | Exists. Review needed. |
+| Electronic Latch | ElectronicLatchCircuit.vhd | Fig 8 | A8(LS04), transistors Q1-Q3 | Integrated and tested; transistor latch remains a digital abstraction, with coin drive priority and power-on attract. |
+| Credit | CreditCircuit.vhd | Fig 8 | A8(LS04), B8(LS74), C8(LS00), C9(LS02), A9(LS74) | Integrated and tested. B8 ripple wiring, C9 type and A9 clocks/preset corrected; board selects one game per coin. |
+| Start | StartCircuit.vhd | Fig 8 | A8(LS04), C9(LS02), B9(LS74) | Integrated and tested. JAMMA adapter supplies settled switch state; C9/B9 control start and attract. |
 | Game Select | GameSelectCircuit.vhd | Fig 10 | D9(LS74 half), C5(LS08) | Exists. Review needed. |
-| Time Line | TimeLineCircuit.vhd | Fig 8 | A2(LS10), N4(LS27), K1(LS74), D9(LS04), E9(555), J2(LS04) | Exists, 555 modelled digitally. Review needed. |
-| Serve Timing | ServeTimingCircuit.vhd | Fig 12 | J5(9602), L5(LS74), H4(LS02) | Exists, one-shot modelled as counter. Review needed. |
+| Time Line | TimeLineCircuit.vhd | Fig 8 | A2(LS10), N4(LS27), K1(LS74), D9(LS04), E9(555), J2(LS04) | Integrated with two-minute digital RC/555 timing and tested expiry/rearm. Existing timer window approximation remains; not fully pin-accurate. |
+| Serve Timing | ServeTimingCircuit.vhd | Fig 12 | J5(9602), L5(LS74), H4(LS02) | Integrated and tested with pin-accurate IC9602 triggers and three-second board serve/catch delays. |
 
 ### Phase 3: Ball System (DONE)
 
@@ -264,7 +264,7 @@ Timing: 455 clocks/scanline, 313 lines/frame, 50.27 Hz (PAL).
 |---------|------|--------|-----|--------|
 | Vertical Direction & Speed | VerticalDirectionAndSpeed.vhd | Fig 14 | D7(9314), D6(LS74), C7(LS86), B7(LS02), F6(LS00), C6(LS04), A7(LS83) | Done. Wired into top-level. D7 MRn polarity fixed: `SERVEn=>serve_i`. A7 adder connections verified against schematic. |
 | Horizontal Direction & Speed | HorizontalDirectionAndSpeed.vhd | Fig 15 | B6(IC9316), B5(LS83), A6(LS08), A5(LS86), B7(LS02), F6(LS00), C6(LS04), F5(LS08) | Done. Wired into top-level. Idle in sim (BALL='0'). |
-| Ball Motion | BallMotionCircuit.vhd | Fig 16 | A4(IC9316), D4(IC9316), B4(IC9316), C4(IC9316), B3(LS107), A3(LS10)+A2(LS10 label for A3 gate 1), D3(LS08), C3(LS00), E3(LS04) | Done. Schematic-verified. D4 preset=12(1100), C4 preset=8(1000). Ball visible in sim. Serve process fires at 13ms; ball stabilises ~19ms later. Diagonal shape is hardware-accurate (374 active px/line not divisible by 8). |
+| Ball Motion | BallMotionCircuit.vhd | Fig 16 | A4(IC9316), D4(IC9316), B4(IC9316), C4(IC9316), B3(LS107), A3(LS10)+A2(LS10 label for A3 gate 1), D3(LS08), C3(LS00), E3(LS04) | Done. Schematic-verified. D4 preset=12(1100), C4 preset=8(1000). Ball visible in sim. Figure 12 now controls serve; testbench initiates paid play through coin/start. Diagonal shape is hardware-accurate (374 active px/line not divisible by 8). |
 | Catch/Kick/Horizontal Direction | CatchKickHorizontalDirection.vhd | Fig 13 | E8(LS00), C8(LS00), D8(LS74), D5(LS74), C5(LS08), C9(LS02), K8(LS02), A8(LS04), D9(LS04) | Done. J5 ch1 STOP/STOPn via ServeTimingCircuit. Idle in sim (BALL='0', HIT='0'). |
 
 ### Phase 4: Players (Solid + Striped Forwards, Defense, Goalie – Fig 11)
@@ -297,7 +297,7 @@ See [docs/PLAYERS_CIRCUIT_FIG11.md](docs/PLAYERS_CIRCUIT_FIG11.md) for pin-level
 | Circuit | File | Figure | ICs | Status |
 |---------|------|--------|-----|--------|
 | Video Summing | - | Fig 22 | Resistor network (R56, R63, R64, R65, C24) | Not yet implemented. Combines COMP_SYNC + SCORE + BALL + PADDLES. |
-| Top-Level | atari_wcc.vhd | - | - | Simulation and Quartus top. Clock, sync, playfield (with goal openings via WindowMissBounce), ball (enabled, serve_proc delays 13ms), players (vertical window, ramp, mux, summing; Solid + Striped Forwards, Solid + Striped Defense/Goalie → PADDLES enabled), hit circuit (K6), window/miss/bounce (Fig 19), catch/kick/horiz dir (Fig 13), horiz dir & speed (Fig 15). |
+| Top-Level | atari_wcc.vhd | - | - | Simulation and Quartus top. Clock, sync, playfield (with goal openings via WindowMissBounce), ball (enabled, Figure 8 coin/start/attract and Figure 12 serve timing), players (vertical window, ramp, mux, summing; Solid + Striped Forwards, Solid + Striped Defense/Goalie → PADDLES enabled), hit circuit (K6), window/miss/bounce (Fig 19), catch/kick/horiz dir (Fig 13), horiz dir & speed (Fig 15). |
 
 ---
 

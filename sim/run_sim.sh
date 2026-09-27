@@ -1,7 +1,7 @@
 #!/bin/bash
 # Atari WCC GHDL Simulation Script
 # Usage: cd sim && bash run_sim.sh
-# Top-level: atari_wcc (display stack: clock, sync, playfield, ball off).
+# Top-level: atari_wcc; testbench drives active-low coin/start inputs.
 #
 # Note: GHDL 0.37 mcode does not support default component binding.
 # All design files use direct entity instantiation (entity work.X).
@@ -77,6 +77,10 @@ ghdl -a --std=93 "$ROOT/BallMotionCircuit.vhd"
 ghdl -a --std=93 "$ROOT/TimeLineCircuit.vhd"
 ghdl -a --std=93 "$ROOT/ScoreCircuit.vhd"
 ghdl -a --std=93 "$ROOT/SoundCircuit.vhd"
+ghdl -a --std=93 "$ROOT/JammaSwitchAdapter.vhd"
+ghdl -a --std=93 "$ROOT/CreditCircuit.vhd"
+ghdl -a --std=93 "$ROOT/ElectronicLatchCircuit.vhd"
+ghdl -a --std=93 "$ROOT/StartCircuit.vhd"
 ghdl -a --std=93 "$ROOT/atari_wcc.vhd"
 
 # Testbench
@@ -85,10 +89,10 @@ ghdl -a --std=93 "$ROOT/testbench/tb_atari_wcc.vhd"
 # Elaborate
 ghdl -e --std=93 tb_atari_wcc
 
-# Default 300 ms covers: pre-serve, post-serve, +5 frames, +10 frames (frame 13 ≈ 250 ms).
-STOP_MS=${STOP_MS:-300}
+# Default 650 ms covers attract, credit, play and accelerated game expiry.
+STOP_MS=${STOP_MS:-650}
 echo "[2/3] Running simulation (${STOP_MS} ms)..."
-ghdl -r --std=93 tb_atari_wcc --stop-time=${STOP_MS}ms 2>&1 || true
+ghdl -r --std=93 tb_atari_wcc --stop-time=${STOP_MS}ms --assert-level=error 2>&1
 
 # Check output
 if [ ! -f frame_data.txt ]; then
@@ -100,10 +104,7 @@ LINES=$(wc -l < frame_data.txt)
 echo "  Generated $LINES samples in frame_data.txt"
 
 echo "[3/3] Rendering keyframes..."
-# Reconstructed frames are ~19.3 ms each in this design's sync timing.
-#   1     = first complete frame; SERVE has just gone high, ball not yet visible
-#   3     = ball clearly on playfield, scores still 0-0 (post-serve)
-#   4..8  = +1..+5 frames after post-serve (each ~19 ms apart)
+# Testbench: coin 100-130 ms, start 160-190 ms, accelerated expiry ~480 ms.
 render_frame() {
     local idx=$1
     local out=$2
@@ -114,16 +115,11 @@ render_frame() {
     fi
 }
 
-render_frame 1 frame_initial.png
-render_frame 3 frame_post_serve.png
-render_frame 4 frame_plus1.png
-render_frame 5 frame_plus2.png
-render_frame 6 frame_plus3.png
-render_frame 7 frame_plus4.png
-render_frame 8 frame_plus5.png
+render_frame 3 frame_attract.png
+render_frame 7 frame_credit.png
+render_frame 9 frame_serve.png
+render_frame 20 frame_play.png
+render_frame 29 frame_game_over.png
+cp -f frame_play.png frame_output.png
 
-# Leave frame_output.png at the last rendered frame so existing tooling still finds something.
-cp -f frame_plus5.png frame_output.png 2>/dev/null || true
-
-echo ""
 echo "=== Done ==="

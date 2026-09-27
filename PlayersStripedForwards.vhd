@@ -16,6 +16,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 entity PlayersStripedForwards is
+    Generic (ATTRACT_POSITION : natural := 100); -- fixed analogue-model fallback
     Port (
         HSYNC      : in  STD_LOGIC;
         RAMP_VALUE : in  STD_LOGIC_VECTOR(9 downto 0);
@@ -30,7 +31,6 @@ end PlayersStripedForwards;
 
 architecture Schematic of PlayersStripedForwards is
     signal comparator_out   : STD_LOGIC;
-    signal controls_enabled : STD_LOGIC;
     signal J9_Q2            : STD_LOGIC;
     signal spike_leading    : STD_LOGIC := '0';
     signal spike_trailing   : STD_LOGIC := '0';
@@ -40,8 +40,11 @@ architecture Schematic of PlayersStripedForwards is
     signal N7_RC            : STD_LOGIC;
     signal J8_Y1            : STD_LOGIC;   -- E3 = not N7_RC, also N7 CEP
 begin
-    controls_enabled <= not ATRCn;
-    comparator_out   <= '1' when (controls_enabled = '1' and UNSIGNED(RAMP_VALUE) >= UNSIGNED(POSITION)) else '0';
+    -- Q7/CR7 disconnect the controls in attract; symbols still run.
+    -- The fallback preserves the existing board positions, pending analogue calibration.
+    comparator_out <= '1' when
+        (ATRCn = '1' and UNSIGNED(RAMP_VALUE) >= UNSIGNED(POSITION)) or
+        (ATRCn = '0' and UNSIGNED(RAMP_VALUE) >= ATTRACT_POSITION) else '0';
 
     -- J9 (IC9602) channel 2: trigger on comparator (A2); B2=1, CLR2n=1. Pulse width sets forward spacing.
     J9: entity work.IC9602

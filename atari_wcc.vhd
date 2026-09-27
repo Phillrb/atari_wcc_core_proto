@@ -7,7 +7,18 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 entity atari_wcc is
+    Generic (
+        INPUT_STABLE_CLOCKS : positive := 35714;
+        GAME_CLOCKS : positive := 857142840; -- 120 s at 7.142857 MHz
+        SERVE_DELAY_CLOCKS : positive := 21428571 -- 3 s; also catch timeout
+    );
 	Port (
+        Coin1_I : in STD_LOGIC := '1'; -- normally open to GND
+        Start1_I : in STD_LOGIC := '1';
+        ATTRACT_DBG : out STD_LOGIC;
+        CREDIT_DBG : out STD_LOGIC;
+        START_DBG : out STD_LOGIC;
+        SERVE_DBG : out STD_LOGIC;
 		CLOCK_14    : in  STD_LOGIC; -- Board PLL clock (14.285714 MHz); nominal schematic clock 14.318180 MHz
 		HSYNC       : out STD_LOGIC;
 		VSYNC       : out STD_LOGIC;
@@ -52,7 +63,8 @@ signal defensemen_n_i : STD_LOGIC;
 signal symbol_i       : STD_LOGIC;
 signal paddles_i      : STD_LOGIC;
 signal hit_i          : STD_LOGIC;
-signal atrcn_i        : STD_LOGIC := '0';  -- ATRCn: '0' = play mode (controls enabled)
+signal atrcn_i, atrc_i : STD_LOGIC; -- ATRCn HIGH in play, ATRC HIGH in attract
+signal coin_pressed, start_pressed, credit_i, coin_accepted_i, credit_expired_i, latch_presetn_i : STD_LOGIC;
 signal solid_fwd_e2, solid_fwd_b2, solid_fwd_c2, solid_fwd_d2 : STD_LOGIC;
 signal solid_def_e1, solid_def_b1, solid_def_c1, solid_def_d1 : STD_LOGIC;
 signal striped_fwd_e3, striped_fwd_b3, striped_fwd_c3, striped_fwd_d3 : STD_LOGIC;
@@ -60,7 +72,7 @@ signal striped_def_e4, striped_def_b4, striped_def_c4, striped_def_d4 : STD_LOGI
 signal goalie_i : STD_LOGIC;
 signal serve_i, serve_n_i : STD_LOGIC;
 
-signal serve_circuit_i, serve_n_circuit_i : STD_LOGIC;
+
 signal vreset_i         : STD_LOGIC;
 signal blip_i           : STD_LOGIC;
 signal stop_i           : STD_LOGIC;
@@ -311,64 +323,47 @@ U_STRIPED_DEF: entity work.PlayersStripedDefenseGoalie
 -- Serve Timing Circuit
 U_SERVE: entity work.ServeTimingCircuit
 	generic map(
-		SERVE_DELAY_CLKS => 10,
-		STOP_DELAY_CLKS  => 50000
+		SERVE_DELAY_CLKS => SERVE_DELAY_CLOCKS,
+		STOP_DELAY_CLKS  => SERVE_DELAY_CLOCKS
 	)
 	port map(
 		CLOCK_7       => clk7,
 		GOALn         => sound_goaln_i,
-		START         => '0',
+		START         => start_i,
 		V128n         => v128n_i,
 		H_ENABLE      => henab_i,
 		H256n         => h256n_i,
-		SERVE         => serve_circuit_i,
-		SERVEn        => serve_n_circuit_i,
+		SERVE         => serve_i,
+		SERVEn        => serve_n_i,
 		CATCH_TRIGGER => catch_trigger_i,
 		CATCH_CLRn    => catch_clrn_i,
 		STOP          => stop_i,
 		STOPn         => stopn_i
 	);
 
--------------------------------------------------------------------------------
--- SYNTHESIZABLE SERVE TIMING
--- Replaces 'wait for 13029 us' with a clock cycle counter on clk7 (7.159 MHz).
--- 13029 us * 7,159,090 Hz = 93,276 cycles.
--------------------------------------------------------------------------------
-serve_proc: process(clk7)
-	constant SERVE_DELAY_CYCLES : integer := 93276;
-	variable count : integer range 0 to SERVE_DELAY_CYCLES := 0;
-begin
-	if rising_edge(clk7) then
-		if count < SERVE_DELAY_CYCLES then
-			count     := count + 1;
-			serve_i   <= '0';
-			serve_n_i <= '1';
-		else
-			serve_i   <= '1';
-			serve_n_i <= '0';
-		end if;
-	end if;
-end process;
-
--------------------------------------------------------------------------------
--- SYNTHESIZABLE SCORE RESET
--- Power-on reset block: generates active-high START and active-low STARTn 
--- pulse for 16 clock cycles at FPGA startup.
--------------------------------------------------------------------------------
-start_proc: process(clk7)
-	variable reset_cnt : integer range 0 to 15 := 0;
-begin
-	if rising_edge(clk7) then
-		if reset_cnt < 15 then
-			reset_cnt := reset_cnt + 1;
-			start_i   <= '1';
-			start_n_i <= '0';
-		else
-			start_i   <= '0';
-			start_n_i <= '1';
-		end if;
-	end if;
-end process;
+-- Figure 8 plus the explicit JAMMA/contact-latch adaptation boundary.
+U_COIN_INPUT: entity work.JammaSwitchAdapter
+    generic map(STABLE_CLOCKS=>INPUT_STABLE_CLOCKS)
+    port map(clk7, Coin1_I, coin_pressed);
+U_START_INPUT: entity work.JammaSwitchAdapter
+    generic map(STABLE_CLOCKS=>INPUT_STABLE_CLOCKS)
+    port map(clk7, Start1_I, start_pressed);
+U_CREDIT: entity work.CreditCircuit
+    port map(CLOCK_7=>clk7, COIN_SWITCH=>coin_pressed, ONE_PLAYER=>'1',
+        V32=>v32_i, V256=>v256_i, ATRC=>atrc_i, LATCH_PRESETn=>latch_presetn_i,
+        CREDIT=>credit_i, COIN_ACCEPTED_PULSE=>coin_accepted_i, CREDIT_EXPIRED=>credit_expired_i);
+U_LATCH: entity work.ElectronicLatchCircuit
+    port map(CLOCK_7=>clk7, COIN_ACCEPTED_PULSE=>coin_accepted_i,
+        STATIC=>'0', CREDIT_EXPIRED=>credit_expired_i, LATCH_PRESETn=>latch_presetn_i);
+U_START: entity work.StartCircuit
+    port map(CLOCK_7=>clk7, V256=>v256_i, CREDIT=>credit_i,
+        START_BUTTON=>start_pressed, END_OF_GAME=>end_of_game_i,
+        LATCH_PRESETn=>latch_presetn_i, START=>start_i, STARTn=>start_n_i,
+        ATRC=>atrc_i, ATRCn=>atrcn_i);
+ATTRACT_DBG <= atrc_i;
+CREDIT_DBG <= credit_i;
+START_DBG <= start_i;
+SERVE_DBG <= serve_i;
 
 -- MISS one-shot per frame
 miss_one_shot_proc: process(clk7)
@@ -393,7 +388,7 @@ U_WINDOW_MISS_BOUNCE: entity work.WindowMissBounce
 		V64        => v64_i,
 		H256n      => h256n_i,
 		ONE_PLAYER => '0',
-		ATRC       => '0',
+		ATRC       => atrc_i,
 		HOLE       => '1',
 		BALLn      => ball_n_i,
 		A_PLUS_Bn  => a_plus_b_n_i,
@@ -428,13 +423,12 @@ U_CATCH_KICK: entity work.CatchKickHorizontalDirection
 		HORIZ_DIR_Qn  => horiz_dir_qn_i
 	);
 
--- Figure 20. Core currently forces play mode elsewhere, so E7 pin 2 is HIGH.
--- Do not use atrcn_i here: that legacy net is LOW during play despite its name.
+-- Figure 20: real ATRCn mutes sound during attract.
 U_SOUND: entity work.SoundCircuit
  generic map(CLOCK_HZ => 7142857) -- actual board PLL / 2 and testbench clock
  port map(CLOCK_7=>clk7, MISS=>miss_i, HIT=>hit_i, STOPn=>stopn_i,
  SLOW=>slow_i, HIT_TONE=>hit_tone_i, V32=>v32_i, BOUNCEn=>bounce_n_i,
- ATRCn=>'1', GOAL=>sound_goal_i, GOALn=>sound_goaln_i,
+ ATRCn=>atrcn_i, GOAL=>sound_goal_i, GOALn=>sound_goaln_i,
  SCORE_SOUNDn=>score_sound_n_i, SOUND_OUT=>SOUND_OUT);
 
 -- Horizontal Direction and Speed
@@ -446,7 +440,7 @@ U_HORIZ_SPEED: entity work.HorizontalDirectionAndSpeed
 		GOAL           => sound_goal_i,
 		SCORE_SOUNDn   => score_sound_n_i,
 		ONE_PLAYER     => '0',
-		ATRC           => '0',
+		ATRC           => atrc_i,
 		GOALIE_FWD_HIT => '1',
 		HSPEED         => hspeed_i,
 		SLOW           => slow_i
@@ -487,6 +481,7 @@ U_BALL_MOTION: entity work.BallMotionCircuit
 
 -- Time Line Circuit
 U_TIMELINE: entity work.TimeLineCircuit
+    generic map(GAME_CLOCKS=>GAME_CLOCKS)
 	port map(
 		CLOCK_7   => clk7,
 		VRESETn   => vresetn_i,
@@ -510,7 +505,7 @@ U_TIMELINE: entity work.TimeLineCircuit
 		V128n     => v128n_i,
 		V256      => v256_i,
 		C_PLUS_Dn => c_plus_d_n_i,
-		ATRC      => '0',
+		ATRC      => atrc_i,
 		TIME_LINEn  => time_line_n_i,
 		END_OF_GAME => end_of_game_i
 	);

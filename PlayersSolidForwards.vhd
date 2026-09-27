@@ -10,11 +10,12 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 entity PlayersSolidForwards is
+    Generic (ATTRACT_POSITION : natural := 100); -- fixed analogue-model fallback
     Port (
         HSYNC      : in  STD_LOGIC;
         RAMP_VALUE : in  STD_LOGIC_VECTOR(9 downto 0);
         POSITION   : in  STD_LOGIC_VECTOR(9 downto 0);  -- Pot position (0-1023)
-        ATRCn      : in  STD_LOGIC;  -- ATRCn from D9 pin 5 (controls enabled when low = play mode)
+        ATRCn      : in  STD_LOGIC;  -- ATRCn from D9 pin 5 (high = play; low = attract)
         E2         : out STD_LOGIC;
         B2         : out STD_LOGIC;
         C2         : out STD_LOGIC;
@@ -24,7 +25,6 @@ end PlayersSolidForwards;
 
 architecture Schematic of PlayersSolidForwards is
     signal comparator_out   : STD_LOGIC;
-    signal controls_enabled : STD_LOGIC;
     signal M9_Q1            : STD_LOGIC;  -- M9 one-shot output
     signal spike_leading    : STD_LOGIC := '0';  -- differentiator: leading edge of M9_Q1
     signal spike_trailing   : STD_LOGIC := '0';  -- differentiator: trailing edge of M9_Q1
@@ -34,8 +34,11 @@ architecture Schematic of PlayersSolidForwards is
     signal K7_RC            : STD_LOGIC;
     signal J8_Y1            : STD_LOGIC;  -- E2 = not K7_RC, also feeds K7 CEP
 begin
-    controls_enabled <= not ATRCn;
-    comparator_out   <= '1' when (controls_enabled = '1' and UNSIGNED(RAMP_VALUE) >= UNSIGNED(POSITION)) else '0';
+    -- Q7/CR7 disconnect the controls in attract; symbols still run.
+    -- The fallback preserves the existing board positions, pending analogue calibration.
+    comparator_out <= '1' when
+        (ATRCn = '1' and UNSIGNED(RAMP_VALUE) >= UNSIGNED(POSITION)) or
+        (ATRCn = '0' and UNSIGNED(RAMP_VALUE) >= ATTRACT_POSITION) else '0';
 
     -- M9 (IC9602) clock-driven one-shot: trigger on comparator (A1); pulse width in HSYNC cycles
     M9: entity work.IC9602

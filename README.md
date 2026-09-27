@@ -11,7 +11,7 @@ This project is a VHDL recreation of the classic 1974 discrete logic arcade game
 |-------|------|--------|
 | Phase 0 | Foundation: clock, H/V sync, sync summing | **Done** |
 | Phase 1 | Playfield circuit (Fig 9) | **Done** |
-| Phase 2 | Game control: electronic latch, credit, start, game select, time line, serve timing | Exists — needs review/verification |
+| Phase 2 | Game control: electronic latch, credit, start, game select, time line, serve timing | Coin/start, attract, two-minute timer and serve integrated and simulation-tested; fixed two-player mode; analogue models and game-select integration remain |
 | Phase 3 | Ball system: motion, direction & speed, catch/kick, window/miss/bounce | **Done** |
 | Phase 4 | Players: all forwards, defense/goalie (solid + striped), ramp, mux, summing | **Done** |
 | Phase 5 | Score circuit, sound circuit, moving hole | Score circuit implemented and integrated; sound (Fig 20) implemented, integrated and simulation-tested; moving hole remains unimplemented |
@@ -46,13 +46,15 @@ cd sim
 bash run_sim.sh
 ```
 
-This compiles the simulation sources, runs for **300 ms** by default, and calls the Python visualizer. Override the duration with, for example, `STOP_MS=900 bash run_sim.sh`. Output:
+This compiles the simulation sources, runs for **650 ms** by default, and calls the Python visualizer. Override the duration with, for example, `STOP_MS=900 bash run_sim.sh`. Output:
 
 - `frame_data.txt` - Raw samples: `HSYNC VSYNC HBLANK VIDEO` captured at 7.142857 MHz (matching the current board clock)
-- `frame_initial.png`, `frame_post_serve.png`, `frame_plus1.png` through `frame_plus5.png` - Keyframes at visualizer indices 1, 3, and 4–8
-- `frame_output.png` - Copy of `frame_plus5.png` (index 8, 2x scale, green phosphor)
+- `frame_attract.png`, `frame_credit.png`, `frame_serve.png`, `frame_play.png`, `frame_game_over.png` - Control-sequence keyframes
+- `frame_output.png` - Copy of `frame_play.png` (index 20, 2x scale, green phosphor)
 - `gameplay.gif` - Animated GIF of all complete frames (generated when >2 frames captured)
 - `frame_output.ppm` - Written with `--ppm`, or as a fallback when `pygame` is unavailable
+
+The testbench inserts a coin, presses Start, and checks return to attract. It accelerates the game to 300 ms and serve/catch delays to 50 ms; board defaults remain two minutes and three seconds. Control regressions: `bash sim/run_control_tests.sh`.
 
 Requires Python 3 with `Pillow`: `pip3 install Pillow`
 
@@ -72,9 +74,17 @@ The board's 50 MHz oscillator feeds a PLL configured for **14.285714 MHz** (mult
 
 The wrapper uses the Sprint2/MaSTer composite-video connections and an external resistor network. Synthesis and fitting passed on 23 September 2026, using 764 of 4,608 logic elements. Hardware video was subsequently tested and reported to look good. Remaining timing-constraint warnings still require review; the visual test does not establish full timing closure.
 
-Sound output is connected to `Audio1_O` on **FPGA pin 71**. The sound-integrated build passes Quartus compilation and fitting, but TimeQuest reports timing violations and incomplete constraints; timing closure remains outstanding. A hardware listening test and integration with the real attract-mode controls are still pending. M9 hit-sound timings remain adjustable estimates. See [sound implementation and validation](docs/SOUND_CIRCUIT_FIG20.md).
+Sound output is connected to `Audio1_O` on **FPGA pin 71**. The sound-integrated build passes Quartus compilation and fitting, but TimeQuest reports timing violations and incomplete constraints; timing closure remains outstanding. Attract-mode muting is integrated and simulation-tested; a hardware listening test remains pending. M9 hit-sound timings remain adjustable estimates. See [sound implementation and validation](docs/SOUND_CIRCUIT_FIG20.md).
 
 See [board clock, pinout and build details](docs/MASTER_CLOCK_AND_VIDEO_ADOPTION.md).
+
+## Coin, Start and Attract Mode
+
+Power-up enters silent attract mode with closed goals and fixed player positions. Insert a coin, release it, then press Start to begin a **two-minute, two-player game**. One coin enables one game; expiry returns to attract and retains the scores.
+
+The board uses Sprint2's `Coin1_I` on **pin 120** and `Start1_I` on **pin 112**, both normally-open switches to GND with FPGA weak pull-ups. A two-stage synchronizer and 5 ms debounce adapt these single-contact inputs to the original changeover-switch latch behavior. The game circuitry then qualifies the coin and generates START/ATRC through Figure 8's TTL logic.
+
+See [JAMMA input and game-control implementation](docs/JAMMA_GAME_CONTROL.md) for the schematic boundary, tests, snapshots and remaining limitations. The updated board build fits in 1,027 of 4,608 logic elements. Timing closure and physical coin/start testing remain outstanding.
 
 ## Documentation
 

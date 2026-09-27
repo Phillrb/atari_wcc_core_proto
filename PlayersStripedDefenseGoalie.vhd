@@ -22,6 +22,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 entity PlayersStripedDefenseGoalie is
+    Generic (ATTRACT_POSITION : natural := 0); -- fixed analogue-model fallback
     Port (
         HSYNC      : in  STD_LOGIC;
         VSYNCn     : in  STD_LOGIC;
@@ -39,7 +40,6 @@ end PlayersStripedDefenseGoalie;
 
 architecture Schematic of PlayersStripedDefenseGoalie is
     signal comparator_out : STD_LOGIC;
-    signal controls_ena   : STD_LOGIC;
     -- 555 timing constants: tuned to match solid defense vertical layout.
     -- The striped circuit's symbol appears AFTER the counter maxes out (J8_10='0'),
     -- unlike the solid circuit where the symbol is active DURING counting (count 0..14).
@@ -72,8 +72,11 @@ architecture Schematic of PlayersStripedDefenseGoalie is
     signal slot_ok_xor    : STD_LOGIC;   -- goalie_segment XOR GOALIE
     signal slot_ok_xnor   : STD_LOGIC;   -- NOT slot_ok_xor = goalie_segment XNOR GOALIE
 begin
-    controls_ena   <= not ATRCn;
-    comparator_out <= '1' when (controls_ena = '1' and UNSIGNED(RAMP_VALUE) >= UNSIGNED(POSITION)) else '0';
+    -- Q7/CR7 disconnect the controls in attract; symbols still run.
+    -- The fallback preserves the existing board positions, pending analogue calibration.
+    comparator_out <= '1' when
+        (ATRCn = '1' and UNSIGNED(RAMP_VALUE) >= UNSIGNED(POSITION)) or
+        (ATRCn = '0' and UNSIGNED(RAMP_VALUE) >= ATTRACT_POSITION) else '0';
 
     -- H9 (555) behavioural: same pattern as N8 in solid defense.
     -- VSYNCn='0' resets the counter each frame; needed because POSITION=0 means comparator is always '1'.

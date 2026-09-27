@@ -14,6 +14,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 entity PlayersSolidDefenseGoalie is
+    Generic (ATTRACT_POSITION : natural := 0); -- fixed analogue-model fallback
     Port (
         HSYNC      : in  STD_LOGIC;
         VSYNCn     : in  STD_LOGIC;   -- H8 pin 13 (CLR1n), pin 10 (CLR2n): clear both FFs at vertical sync
@@ -30,7 +31,6 @@ end PlayersSolidDefenseGoalie;
 
 architecture Schematic of PlayersSolidDefenseGoalie is
     signal comparator_out : STD_LOGIC;
-    signal controls_ena   : STD_LOGIC;
     -- 555 (N8) model: INITIAL_GAP (no draw) then 3 blocks of (SEGMENT_GAP + SEGMENT_LEN). Time adjust to lower group on screen.
     constant INITIAL_GAP  : INTEGER := 85;   -- phases at start with N8_3 high (no draw) -> block higher on playfield
     constant SEGMENT_GAP  : INTEGER := 18;   -- scanlines between segments (~1/3 playfield height between defensemen)
@@ -57,8 +57,11 @@ architecture Schematic of PlayersSolidDefenseGoalie is
     signal slot_ok_xor   : STD_LOGIC;   -- goalie_segment xor GOALIE (for xnor)
     signal slot_ok_xnor  : STD_LOGIC;   -- goalie_segment xnor GOALIE: 1 = show this slot
 begin
-    controls_ena   <= not ATRCn;
-    comparator_out <= '1' when (controls_ena = '1' and UNSIGNED(RAMP_VALUE) >= UNSIGNED(POSITION)) else '0';
+    -- Q7/CR7 disconnect the controls in attract; symbols still run.
+    -- The fallback preserves the existing board positions, pending analogue calibration.
+    comparator_out <= '1' when
+        (ATRCn = '1' and UNSIGNED(RAMP_VALUE) >= UNSIGNED(POSITION)) or
+        (ATRCn = '0' and UNSIGNED(RAMP_VALUE) >= ATTRACT_POSITION) else '0';
 
     -- 555 (N8) behavioural: when comparator high, run 0..PHASE_MAX. N8_3 high during INITIAL_GAP then per-block gap (load, no draw).
     -- VSYNCn='0' resets the counter each frame; needed because POSITION=0 means comparator is always '1'

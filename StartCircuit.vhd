@@ -7,7 +7,7 @@
 --
 -- IC grid (README): A8=LS04, C9=LS02, B9=LS74.
 -- This module implements B9 (LS74) and the start-pulse logic (A8/C9 debounce
--- modelled as a single pulse lasting one 256V period).
+-- contact memory supplied by the JAMMA adapter; C9 retains attract gating).
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -27,10 +27,10 @@ entity StartCircuit is
 	);
 end StartCircuit;
 
-architecture Behavioral of StartCircuit is
+architecture Structural of StartCircuit is
 	-- B9 (LS74): first FF = B9-5/6 (START), second FF = B9-9/8 (ATRC)
-	signal start_req   : STD_LOGIC := '0';  -- D input to B9-5; set by button, cleared on 256V rise
-	signal v256_prev   : STD_LOGIC := '0';
+	signal start_req   : STD_LOGIC; -- D input to B9-5: pressed while in attract
+	signal released : STD_LOGIC;
 	signal B9_Q1       : STD_LOGIC;  -- START
 	signal B9_Q1n      : STD_LOGIC;  -- STARTn
 	signal B9_Q2       : STD_LOGIC;  -- ATRC
@@ -42,19 +42,15 @@ begin
 	clr1_n <= CREDIT;
 	clr2_n <= B9_Q1n;  -- low START clears B9-9/8
 
-	-- Start-pulse: set when button and credit and attract; clear on 256V rising edge
-	-- (models A8-10/C9-10 debounce producing one pulse to D of B9-5)
-	process (CLOCK_7)
-	begin
-		if rising_edge(CLOCK_7) then
-			v256_prev <= V256;
-			if v256_prev = '0' and V256 = '1' then
-				start_req <= '0';
-			else
-				start_req <= start_req or (START_BUTTON and CREDIT and B9_Q2);
-			end if;
-		end if;
-	end process;
+    -- A8/C9 contact memory is represented by the board adapter's settled
+    -- switch state. Preserve C9 gate 3 attract inhibit: NOR(released, ATRCn).
+    -- Pressing Start while already playing cannot generate another START.
+    U_A8: entity work.LS04 port map(
+        P11_A5=>START_BUTTON, P10_Y5=>released,
+        P2_Y1=>open, P4_Y2=>open, P6_Y3=>open, P8_Y4=>open, P12_Y6=>open);
+    U_C9: entity work.LS02 port map(
+        P8_A3=>released, P9_B3=>B9_Q2n, P10_Y3=>start_req,
+        P1_Y1=>open, P4_Y2=>open, P13_Y4=>open);
 
 	-- B9 (LS74): dual D flip-flop
 	-- B9-5/6: D=start_req, CLK=256V, CLR1n=CREDIT -> Q1=START, Q1n=STARTn
@@ -79,4 +75,4 @@ begin
 	STARTn <= B9_Q1n;
 	ATRC   <= B9_Q2;
 	ATRCn  <= B9_Q2n;
-end Behavioral;
+end Structural;

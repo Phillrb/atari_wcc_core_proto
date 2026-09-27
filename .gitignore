@@ -25,3 +25,10 @@ sim/commit_msg.txt
 sim/frame_output.ppm
 sim/frame_output.png
 sim/gameplay.gif
+
+# Coin/start control-sequence snapshots
+sim/frame_attract.png
+sim/frame_credit.png
+sim/frame_serve.png
+sim/frame_play.png
+sim/frame_game_over.png

@@ -5,7 +5,7 @@
 --   1) Power on: latch off, preset active -> attract mode.
 --   2) Coin accepted: pulse turns on Q3 then Q1; latch holds -> preset released (can start).
 --   3) Static (antenna): Q2 on -> Q1 off -> preset active -> attract.
---   4) Credit expired: A9-9/8 Q low -> Q1 off -> preset active -> attract.
+--   4) Credit expired: A9-9/8 Q high (Qn low) -> Q1 off -> preset active -> attract.
 --
 -- We model the transistor latch as a flip-flop: latched = true after coin pulse
 -- until STATIC or CREDIT_EXPIRED; output goes through A8-12 to form LATCH_PRESETn.
@@ -18,7 +18,7 @@ entity ElectronicLatchCircuit is
 		CLOCK_7            : in  STD_LOGIC;
 		COIN_ACCEPTED_PULSE: in  STD_LOGIC := '0';  -- from Credit (NAND C8-8); pulse when coin in
 		STATIC             : in  STD_LOGIC := '0';  -- antenna; high when static sensed
-		CREDIT_EXPIRED     : in  STD_LOGIC := '0';  -- from Credit/1P/2P (A9-9/8 Q low)
+		CREDIT_EXPIRED     : in  STD_LOGIC := '0';  -- from Credit/1P/2P (A9-9/8 Q high (Qn low))
 		LATCH_PRESETn      : out STD_LOGIC          -- to B9-9/8 and A9-9/8; low = preset active
 	);
 end ElectronicLatchCircuit;
@@ -26,17 +26,17 @@ end ElectronicLatchCircuit;
 architecture Behavioral of ElectronicLatchCircuit is
 	-- Q1 collector: high when Q1 off (not latched), low when Q1 on (latched after coin)
 	signal Q1_collector : STD_LOGIC := '1';  -- power-on: Q1 off
-	signal coin_prev    : STD_LOGIC := '0';
 begin
 	-- Latch state: set on coin pulse, clear on static or credit expired
 	process (CLOCK_7)
 	begin
 		if rising_edge(CLOCK_7) then
-			coin_prev <= COIN_ACCEPTED_PULSE;
-			if STATIC = '1' or CREDIT_EXPIRED = '1' then
+			if STATIC = '1' then
 				Q1_collector <= '1';  -- Q1 off, unlatch
-			elsif coin_prev = '0' and COIN_ACCEPTED_PULSE = '1' then
-				Q1_collector <= '0';  -- coin pulse: Q3 then Q1 on, latch
+			elsif COIN_ACCEPTED_PULSE = '1' then
+				Q1_collector <= '0';  -- CR5 coin drive overrides the expired-credit state
+			elsif CREDIT_EXPIRED = '1' then
+				Q1_collector <= '1';
 			end if;
 		end if;
 	end process;

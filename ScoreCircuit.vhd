@@ -36,7 +36,7 @@ entity ScoreCircuit is
         START   : in  STD_LOGIC;   -- game start (resets score counters, active high)
         STARTn  : in  STD_LOGIC;   -- inverted START
         SERVE   : in  STD_LOGIC;   -- ball in play (from ServeTimingCircuit)
-        ATRCn   : in  STD_LOGIC;   -- attract mode, active low = play
+        ATRCn   : in  STD_LOGIC;   -- LOW in attract; HIGH in play
         -- Video inputs for compositing
         TIME_LINEn  : in  STD_LOGIC;   -- time line video, active low
         PLAYFIELDn  : in  STD_LOGIC;   -- playfield video, active low
@@ -269,7 +269,7 @@ begin
     -- =========================================================
     -- M2 (LS48) - BCD to 7-segment decoder
     -- BIn (P4) = h3_y1: blanks display outside vertical window
-    --            or during SERVE in attract mode.
+    --            or while the ball is in play (SERVE and ATRCn high).
     -- RBIn (P5) = H16: ripple-blanks leading zero (tens digit when = 0).
     -- =========================================================
     ic_M2: entity work.LS48

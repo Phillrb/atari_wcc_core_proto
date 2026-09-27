@@ -3,7 +3,7 @@
 -- Develops SERVE and SERVEn signals used to initiate ball serve.
 -- Also provides STOP/STOPn from J5 ch1 (catch timing for Figure 13).
 --
--- J5 ch2 one-shot (~3s) triggered by GOALn rising (A2) or START falling (B2).
+-- J5 ch2 one-shot (~3s) triggered by GOALn falling (A2, START low) or START rising (B2, GOALn high).
 -- Output Q2n normally HIGH, goes LOW during pulse.
 -- J5 Q2n -> L5 CLR1n (pin 1) and D1 (pin 2): clears FF1 and holds D=0 during pulse.
 -- After delay, V128n rising edge clocks L5-5 (Q1=HIGH since D1=HIGH).
@@ -18,8 +18,8 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 entity ServeTimingCircuit is
     Generic (
-        SERVE_DELAY_CLKS : natural := 50000;  -- J5 ch2 pulse width in CLK cycles (sim default; ~21_480_000 for 3s at 7.16 MHz)
-        STOP_DELAY_CLKS  : natural := 50000   -- J5 ch1 pulse width in CLK cycles (~3s real = 21_480_000)
+        SERVE_DELAY_CLKS : natural := 21428571;  -- J5 ch2 pulse width in CLK cycles (3 seconds at the current board clock)
+        STOP_DELAY_CLKS  : natural := 21428571   -- J5 ch1 pulse width in CLK cycles (3 seconds at the current board clock)
     );
     Port (
         CLOCK_7  : in  STD_LOGIC;   -- 7.159 MHz clock for IC9602 timing
@@ -53,6 +53,7 @@ begin
     --       Output: Pin 9 (Q2n) normally HIGH, goes LOW for SERVE_DELAY_CLKS
     U_J5: entity work.IC9602
         generic map(
+            PIN_ACCURATE     => true,
             PULSE_WIDTH_CLKS  => STOP_DELAY_CLKS,
             PULSE_WIDTH_CLKS2 => SERVE_DELAY_CLKS
         )

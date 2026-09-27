@@ -11,6 +11,9 @@ architecture Behavioral of tb_atari_wcc is
 constant CLK_HALF : time := 35 ns;
 
 signal audio_o : STD_LOGIC;
+signal coin_n, start_button_n : STD_LOGIC := '1';
+signal attract, credit, start_pulse, serve : STD_LOGIC;
+signal served_in_play : boolean := false;
 signal clk14     : STD_LOGIC := '0';
 signal hsync_o   : STD_LOGIC;
 signal vsync_o   : STD_LOGIC;
@@ -31,7 +34,10 @@ clk14 <= not clk14 after CLK_HALF;
 
 -- Device under test
 DUT: entity work.atari_wcc
+    generic map(GAME_CLOCKS=>2142857, SERVE_DELAY_CLOCKS=>357143) -- 300 ms game, 50 ms serve
 	port map(
+        Coin1_I=>coin_n, Start1_I=>start_button_n,
+        ATTRACT_DBG=>attract, CREDIT_DBG=>credit, START_DBG=>start_pulse, SERVE_DBG=>serve,
 		CLOCK_14    => clk14,
 		HSYNC       => hsync_o,
 		VSYNC       => vsync_o,
@@ -44,6 +50,42 @@ DUT: entity work.atari_wcc
 		SOUND_OUT   => audio_o,
 		Clock_out   => open
 	);
+
+-- Same normally-open inputs as hardware: no automatic start in the core.
+control_sequence: process
+begin
+    wait for 20 ms;
+    assert attract='1' and credit='0' report "power-on attract failed" severity failure;
+    start_button_n<='0'; wait for 30 ms; start_button_n<='1';
+    wait for 30 ms;
+    assert attract='1' and start_pulse='0' and audio_o='1'
+        report "unpaid start or attract mute failed" severity failure;
+    wait for 20 ms;
+    coin_n<='0'; wait for 30 ms; coin_n<='1'; wait for 30 ms;
+    assert credit='1' and attract='1' report "coin must grant credit without starting" severity failure;
+    start_button_n<='0'; wait for 30 ms; start_button_n<='1';
+    assert attract='0' and serve='0' report "paid start / serve delay failed" severity failure;
+    wait for 100 ms;
+    assert attract='0' and served_in_play report "real serve circuit did not release ball" severity failure;
+    wait for 250 ms;
+    assert attract='1' and credit='0' and audio_o='1'
+        report "time expiry must restore silent attract and exhaust credit" severity failure;
+    start_button_n<='0'; wait for 30 ms; start_button_n<='1'; wait for 30 ms;
+    assert attract='1' report "expired credit allowed restart" severity failure;
+    report "Full core attract / coin / start / serve / expiry sequence passed";
+    wait;
+end process;
+
+serve_monitor: process(serve)
+begin
+    if rising_edge(serve) and attract='0' then served_in_play<=true; end if;
+end process;
+
+control_trace: process(attract, credit, start_pulse, serve)
+begin
+    report "control ATRC=" & std_logic'image(attract) & " CREDIT=" & std_logic'image(credit) &
+           " START=" & std_logic'image(start_pulse) & " SERVE=" & std_logic'image(serve);
+end process;
 
 -- Frame counter: count VSYNC falling edges, enable capture every 2nd frame
 frame_counter: process

@@ -11,14 +11,14 @@
 --
 -- IC grid (README): A2=LS10, N4=LS27, K1=LS74, D9=LS04, E9=555, J2=LS04.
 -- The 555+RC ramp is modelled digitally: a start_V register advances each
--- field when ATRC='0', so the visible line shrinks from the top over time.
+-- timed step when ATRC='0', so the visible line shrinks over 120 seconds.
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 entity TimeLineCircuit is
-	Generic ( START_V_INIT : natural := 80 );  -- initial timeline top (for GIF keyframes: run with 80,100,...,235)
+	Generic ( START_V_INIT : natural := 80; GAME_CLOCKS : positive := 857142840 );  -- initial timeline top (for GIF keyframes: run with 80,100,...,235)
 	Port (
 		CLOCK_7  : in  STD_LOGIC;
 		VRESETn  : in  STD_LOGIC;   -- vertical reset (start of field), active low
@@ -59,7 +59,6 @@ architecture Behavioral of TimeLineCircuit is
 	signal D9_8       : STD_LOGIC;
 
 	-- Game-time state: vertical position at which the time line "starts" (top of bar).
-	constant V_END        : unsigned(8 downto 0) := to_unsigned(240, 9);
 	constant V_END_GAME   : unsigned(8 downto 0) := to_unsigned(244, 9); -- end when bar nearly gone
 
 	signal start_V    : unsigned(8 downto 0) := to_unsigned(START_V_INIT, 9);
@@ -71,8 +70,9 @@ architecture Behavioral of TimeLineCircuit is
 	-- N4-6 (LS27 gate 2): END_OF_GAME = NOR(C_PLUS_Dn, D9_8, V128n)
 	signal end_of_game_i : STD_LOGIC;
 
-	-- VRESETn edge detection: advance start_V once per field when ATRC='0'
-	signal vreset_prev : STD_LOGIC := '1';
+	-- Digital approximation of the adjustable C4 charging time. Default 120 s.
+    constant STEP_CLOCKS : positive := GAME_CLOCKS / (241 - START_V_INIT);
+    signal elapsed_step : natural range 0 to STEP_CLOCKS-1 := 0;
 
 begin
 
@@ -87,26 +87,29 @@ begin
 	H_window <= '1' when (H_int >= to_unsigned(102, 9) and H_int < to_unsigned(106, 9)) else '0';
 
 	-- D9-8 (inverted 555 output): high when we are past the "delay" for this field.
-	-- Behavioural: high when V >= start_V and within 80..240. So bar runs from start_V down to 240.
-	D9_8 <= '1' when (V_int >= start_V and V_int <= V_END) else '0';
+	-- E9 remains low after expiry until the next field; D9-8 must stay HIGH
+	-- beyond V=240, otherwise N4 falsely ends a newly started game.
+	D9_8 <= '1' when (V_int >= start_V) else '0';
 
-	-- Advance start_V at the end of each vertical reset (once per field) when game is on (ATRC='0').
-	-- Pot adjustment equivalent: start_V can start at 80 (trim) and rate is fixed here (time rate pot).
-	process (CLOCK_7)
-	begin
-		if rising_edge(CLOCK_7) then
-			vreset_prev <= VRESETn;
-			if vreset_prev = '0' and VRESETn = '1' then
-				if ATRC = '0' then
-					if start_V < V_END_GAME then
-						start_V <= start_V + 1;
-					end if;
-				else
-					start_V <= to_unsigned(START_V_INIT, 9);
-				end if;
-			end if;
-		end if;
-	end process;
+    -- C4 discharges in attract; during play its rising control voltage
+    -- lengthens the E9 pulse. The last step reaches V=241 after GAME_CLOCKS
+    -- clocks (rounded down by <161 clocks), then N4 ends play at the wall.
+    process (CLOCK_7)
+    begin
+        if rising_edge(CLOCK_7) then
+            if ATRC = '1' then
+                start_V <= to_unsigned(START_V_INIT, 9);
+                elapsed_step <= 0;
+            elsif elapsed_step = STEP_CLOCKS-1 then
+                elapsed_step <= 0;
+                if start_V < V_END_GAME then
+                    start_V <= start_V + 1;
+                end if;
+            else
+                elapsed_step <= elapsed_step + 1;
+            end if;
+        end if;
+    end process;
 
 	-- A2-8 (LS10): TIME_LINE = NAND(H_window, V_pulse, D9_8); output active low when line drawn
 	IC_A2: entity work.LS10
