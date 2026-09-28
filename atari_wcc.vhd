@@ -46,7 +46,7 @@ signal hresetn_i      : STD_LOGIC;
 signal vresetn_i      : STD_LOGIC;
 signal hblank_i       : STD_LOGIC;
 signal hblankn_i      : STD_LOGIC;
-signal h1_i, h2_i, h4_i, h8_i, h16_i, h32_i, h64_i, h64n_i, h128_i, h256_i, h256n_i : STD_LOGIC;
+signal h1_i, h1n_i, h2_i, h4_i, h8_i, h16_i, h32_i, h64_i, h64n_i, h128_i, h256_i, h256n_i : STD_LOGIC;
 signal v1_i, v2_i, v4_i, v8_i, v16_i, v32_i, v64_i, v64n_i, v128_i, v128n_i, v256_i, v256n_i : STD_LOGIC;
 
 -- Playfield and ball signals
@@ -201,7 +201,8 @@ U_PLAYFIELD: entity work.PlayfieldCircuit
 		H_ENABLE => henab_i,
 		V_ENABLE => venab_i,
 		A_PLUS_Bn => a_plus_b_n_i,
-		C_PLUS_Dn => c_plus_d_n_i
+		C_PLUS_Dn => c_plus_d_n_i,
+		H1n		  => h1n_i
 	);
 
 -- Players circuit: vertical window generator
@@ -485,15 +486,9 @@ U_TIMELINE: entity work.TimeLineCircuit
 	port map(
 		CLOCK_7   => clk7,
 		VRESETn   => vresetn_i,
-		H1        => h1_i,
-		H2        => h2_i,
+		H1n		  => h1n_i,
 		H4        => h4_i,
-		H8        => h8_i,
-		H16       => h16_i,
-		H32       => h32_i,
-		H64       => h64_i,
 		H128      => h128_i,
-		H256      => h256_i,
 		V1        => v1_i,
 		V2        => v2_i,
 		V4        => v4_i,

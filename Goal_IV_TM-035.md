@@ -941,7 +941,7 @@ defensemen and goalie symbols to move up on the TV screen.
 #### Multiplexer Circuit
 The multiplexer circuit consists of multiplexers
 L7 and H7. Multiplexer L7 receives the B1, B2, BS, B4, C1, C2, C8 and C4
-signsl from counters of the defensemen/goalie and forwards circuits, Multi-
+signal from counters of the defensemen/goalie and forwards circuits, Multi-
 plexer H7 receives the D1, D2, D3 and D4 signals From the counters of the
 defensemen Aoalies and forwards circuits and the player~symbol signals (E1,
 Fe, ES and £4). The TEAM and <span class="over">Q</span> signals from the vertical window generator

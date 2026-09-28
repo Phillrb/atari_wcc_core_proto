@@ -1,12 +1,11 @@
 -- Time Line Circuit for Goal IV (WCC) - TM-035 Figure 8
 --
 -- The time line is a vertical bar physically to the left of the playfield
--- (H = 102..105, ~8 px gap to playfield left at 113 in PNG). Height decreases during play.
--- When the line disappears, the game ends (END_OF_GAME).
+-- Height decreases during play.When the line disappears, the game ends (END_OF_GAME).
 --
 -- Manual: resistors R6,R7,R14,R15,R17; pots R10,R18; caps C4,C5; transistors
 -- Q4,Q5; timer E9 (555); inverters D9-8, J2-10; NAND A2-8 (LS10); negative-true
--- AND N4-6 (LS27); flip-flop K1-5 (LS74). Window: 102H-105H for ~8 px gap (schematic 128H),
+-- AND N4-6 (LS27); flip-flop K1-5 (LS74).
 -- V pulse 80V-240V from playfield. TIME LINE = NAND(window, V_pulse, D9-8).
 --
 -- IC grid (README): A2=LS10, N4=LS27, K1=LS74, D9=LS04, E9=555, J2=LS04.
@@ -22,15 +21,9 @@ entity TimeLineCircuit is
 	Port (
 		CLOCK_7  : in  STD_LOGIC;
 		VRESETn  : in  STD_LOGIC;   -- vertical reset (start of field), active low
-		H1      : in  STD_LOGIC;
-		H2      : in  STD_LOGIC;
+		H1n		: in  STD_LOGIC;
 		H4      : in  STD_LOGIC;
-		H8      : in  STD_LOGIC;
-		H16     : in  STD_LOGIC;
-		H32     : in  STD_LOGIC;
-		H64     : in  STD_LOGIC;
 		H128    : in  STD_LOGIC;
-		H256    : in  STD_LOGIC;
 		V1      : in  STD_LOGIC;
 		V2      : in  STD_LOGIC;
 		V4      : in  STD_LOGIC;
@@ -52,7 +45,7 @@ architecture Behavioral of TimeLineCircuit is
 
 	-- Vertical window pulse 80V..240V (V pulse from playfield description)
 	signal V_pulse     : STD_LOGIC;
-	-- Horizontal window 102H..105H (4 px wide; ~8 px gap to playfield left at 113H in PNG)
+	-- Horizontal window
 	signal H_window    : STD_LOGIC;
 	-- Digital equivalent of D9-8: high when we are in the "draw" part of the field
 	-- (past the 555 delay). As game time advances, this becomes true later in the field.
@@ -63,7 +56,6 @@ architecture Behavioral of TimeLineCircuit is
 
 	signal start_V    : unsigned(8 downto 0) := to_unsigned(START_V_INIT, 9);
 	signal V_int      : unsigned(8 downto 0);
-	signal H_int      : unsigned(8 downto 0);
 
 	-- A2-8 (LS10 gate 3): TIME_LINE = NAND(H_window, V_pulse, D9_8) -> active low when draw
 	signal TIME_LINE_raw : STD_LOGIC;
@@ -74,17 +66,14 @@ architecture Behavioral of TimeLineCircuit is
     constant STEP_CLOCKS : positive := GAME_CLOCKS / (241 - START_V_INIT);
     signal elapsed_step : natural range 0 to STEP_CLOCKS-1 := 0;
 
+	signal H4n : STD_LOGIC;
 begin
 
 	V_int <= unsigned(std_logic_vector'(V256 & V128 & V64 & V32 & V16 & V8 & V4 & V2 & V1));
-	H_int <= unsigned(std_logic_vector'(H256 & H128 & H64 & H32 & H16 & H8 & H4 & H2 & H1));
 
 	-- V pulse: match playfield vertical extent - start at top (84), end before bottom (234)
 	-- Manual 80V-240V; adjusted so timeline aligns with playfield top and ends before bottom line.
 	V_pulse <= '1' when (V_int >= to_unsigned(84, 9) and V_int <= to_unsigned(234, 9)) else '0';
-
-	-- Horizontal window: 102H to 105H (4 px; ~8 px gap to playfield left in output)
-	H_window <= '1' when (H_int >= to_unsigned(102, 9) and H_int < to_unsigned(106, 9)) else '0';
 
 	-- D9-8 (inverted 555 output): high when we are past the "delay" for this field.
 	-- E9 remains low after expiry until the next field; D9-8 must stay HIGH
@@ -110,6 +99,21 @@ begin
             end if;
         end if;
     end process;
+
+	IC_J2: entity work.LS04
+		port map(
+			P10_Y5 => H4n,
+			P11_A5 => H4
+		);
+
+	IC_K1: entity work.LS74
+		port map(
+			P1_CLR1n => H4n,
+			P2_D1 => H1n,
+			P3_CLK1 => H128,
+			P4_SET1n => '1',
+			P5_Q1 => H_window
+		);
 
 	-- A2-8 (LS10): TIME_LINE = NAND(H_window, V_pulse, D9_8); output active low when line drawn
 	IC_A2: entity work.LS10

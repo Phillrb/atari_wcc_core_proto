@@ -35,7 +35,8 @@ entity PlayfieldCircuit is
         H_ENABLE : out STD_LOGIC;
         V_ENABLE : out STD_LOGIC;
         A_PLUS_Bn : out STD_LOGIC;   -- (A+B)n: active low at left/right wall positions
-        C_PLUS_Dn : out STD_LOGIC    -- (C+D)n: active low at top/bottom wall positions
+        C_PLUS_Dn : out STD_LOGIC;    -- (C+D)n: active low at top/bottom wall positions
+        H1n       : out STD_LOGIC
     );
 end PlayfieldCircuit;
 
@@ -233,4 +234,5 @@ begin
     V_ENABLE   <= V_ENABLE_i;
     A_PLUS_Bn  <= A_plus_B_n;
     C_PLUS_Dn  <= C_plus_D_n;
+    H1n        <= K4_H_Qn;
 end Schematic;

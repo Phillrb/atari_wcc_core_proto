@@ -119,10 +119,11 @@ set_location_assignment PIN_80 -to Clock_out
 set_location_assignment PIN_71 -to Audio1_O
 set_global_assignment -name SDC_FILE atari_wcc.sdc
 
-set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
 # JAMMA active-low, normally-open switches (Sprint2 connector assignments).
 set_location_assignment PIN_120 -to Coin1_I
 set_location_assignment PIN_112 -to Start1_I
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to Coin1_I
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to Start1_I
 set_global_assignment -name VHDL_FILE JammaSwitchAdapter.vhd
+
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
