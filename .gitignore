@@ -32,3 +32,10 @@ sim/frame_credit.png
 sim/frame_serve.png
 sim/frame_play.png
 sim/frame_game_over.png
+
+# Figure 18 signal diagnostics
+sim/moving_hole_timing.png
+sim/moving_hole.gif
+sim/moving_hole_trace.csv
+sim/moving_hole_core.png
+sim/moving_hole_core.gif

@@ -105,7 +105,7 @@ All players wired in atari_wcc.vhd and visible in simulation.
 | Task | What |
 |------|------|
 | 5.1 | **Hit Circuit** – Fig 17 (K6 LS08); simple AND. |
-| 5.2 | **Moving Hole** – Fig 18 (1-player); F3, M1, J1, E3, K1, H1, L4, M4. |
+| 5.2 | **Moving Hole** – Fig 18 implemented and tested; F3, M1, J1, E3, K1, H1, L4, M4. Confirmed 9/11 presets do not reverse on the 313-line raster; see [verification notes](MOVING_HOLE_FIG18.md). |
 | 5.3 | **Window/Miss/Bounce** – Fig 19 (done as part of Phase 3.5). |
 | 5.4 | **Score Circuit** – Fig 21 (M2 LS48, M3/N3 LS153, K3 LS90, N2 LS107, J3/H2/K2/L2 LS00, J2 LS04, D3 LS08, L1 LS27, H3/N4/F3). LS48 already in 74LS. |
 | 5.5 | **Sound Circuit** – Fig 20 (J9, M9, E5 IC9602, L8 LS00, E7 LS27). |

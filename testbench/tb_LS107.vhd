@@ -10,31 +10,12 @@ architecture test of tb_LS107 is
 signal J1_in, K1_in, J2_in, K2_in, CLK1_in, CLK2_in, CLR1_in, CLR2_in : std_logic := '0';
 signal Q1_out, Q1n_out, Q2_out, Q2n_out : std_logic;
 
-component LS107 is
-	Port (
-		P1_J1    : in  STD_LOGIC;
-		P2_Q1n 	: out STD_LOGIC;
-		P3_Q1 	: out STD_LOGIC;
-		P4_K1    : in  STD_LOGIC;
-		P5_Q2    : out STD_LOGIC;
-		P6_Q2n   : out STD_LOGIC;
-		-- P7 : GND
-		P8_J2 	 : in STD_LOGIC;
-		P9_CLK2 	 : in STD_LOGIC;
-		P10_CLR2n : in STD_LOGIC;
-		P11_K2	 : in STD_LOGIC;
-		P12_CLK1	 : in STD_LOGIC;
-		P13_CLR1n : in STD_LOGIC
-		-- P14 : VCC
-	);
-end component;
-
 begin
 
  CLK1_in <= not CLK1_in after 1 ns;
  CLK2_in <= not CLK2_in after 1 ns;
 
-dut : LS107
+dut : entity work.LS107
 port map (
 	P1_J1     => J1_in,
 	P2_Q1n 	 => Q1n_out,

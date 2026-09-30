@@ -12,28 +12,9 @@ signal Q1_out, Q1n_out : std_logic;
 signal CLR2n_in, D2_in, CLK2_in, SET2n_in : std_logic := '0';
 signal Q2_out, Q2n_out : std_logic;
 
-component LS74 is
-	Port (
-		P1_CLR1n : in  STD_LOGIC;
-		P2_D1 	: in  STD_LOGIC;
-		P3_CLK1	: in  STD_LOGIC;
-		P4_SET1n : in  STD_LOGIC;
-		P5_Q1    : out STD_LOGIC;
-		P6_Q1n   : out STD_LOGIC;
-		-- P7 : GND
-		P8_Q2n 	: out STD_LOGIC;
-		P9_Q2 	: out STD_LOGIC;
-		P10_SET2n : in STD_LOGIC;
-		P11_CLK2	:  in STD_LOGIC;
-		P12_D2	:  in STD_LOGIC;
-		P13_CLR2n : in STD_LOGIC
-		-- P14 : VCC
-	);
-end component;
-
 begin
 
-dut : LS74
+dut : entity work.LS74
 port map (
 		P1_CLR1n => CLR1n_in,
 		P2_D1 => D1_in,

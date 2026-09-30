@@ -14,7 +14,7 @@ entity WindowMissBounce is
         H256n      : in  STD_LOGIC;   -- 256Hn from horizontal counter
         ONE_PLAYER : in  STD_LOGIC;   -- 1-player mode
         ATRC       : in  STD_LOGIC;   -- Attract mode (high=attract, low=play)
-        HOLE       : in  STD_LOGIC;   -- Moving hole signal (active low = hole present)
+        HOLE       : in  STD_LOGIC;   -- Moving hole signal (active high = hole present)
         -- Bounce/miss circuit inputs
         BALLn      : in  STD_LOGIC;   -- Inverted ball signal (low = ball present)
         A_PLUS_Bn  : in  STD_LOGIC;   -- (A+B)n from playfield (low at L/R wall positions)

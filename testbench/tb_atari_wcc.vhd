@@ -3,6 +3,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 use STD.TEXTIO.ALL;
 
 entity tb_atari_wcc is
+    generic (ONE_PLAYER_MODE : STD_LOGIC := '0');
 end tb_atari_wcc;
 
 architecture Behavioral of tb_atari_wcc is
@@ -34,7 +35,7 @@ clk14 <= not clk14 after CLK_HALF;
 
 -- Device under test
 DUT: entity work.atari_wcc
-    generic map(GAME_CLOCKS=>2142857, SERVE_DELAY_CLOCKS=>357143) -- 300 ms game, 50 ms serve
+    generic map(ONE_PLAYER_MODE=>ONE_PLAYER_MODE, GAME_CLOCKS=>2142857, SERVE_DELAY_CLOCKS=>357143) -- 300 ms game, 50 ms serve
 	port map(
         Coin1_I=>coin_n, Start1_I=>start_button_n,
         ATTRACT_DBG=>attract, CREDIT_DBG=>credit, START_DBG=>start_pulse, SERVE_DBG=>serve,

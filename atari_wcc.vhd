@@ -8,6 +8,7 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity atari_wcc is
     Generic (
+        ONE_PLAYER_MODE : STD_LOGIC := '0'; -- Static selection until Figure 10 is integrated
         INPUT_STABLE_CLOCKS : positive := 35714;
         GAME_CLOCKS : positive := 857142840; -- 120 s at 7.142857 MHz
         SERVE_DELAY_CLOCKS : positive := 21428571 -- 3 s; also catch timeout
@@ -101,6 +102,7 @@ signal video_timeline   : STD_LOGIC;
 signal score_i          : STD_LOGIC;
 signal start_i          : STD_LOGIC;    -- score counter reset (active high)
 signal start_n_i        : STD_LOGIC;    -- inverted START (active low)
+signal hole_i           : STD_LOGIC;
 
 signal sound_goal_i, sound_goaln_i, score_sound_n_i : STD_LOGIC;
 
@@ -214,7 +216,7 @@ U_PLAYERS_VW: entity work.PlayersVerticalWindow
 		HRESETn        => hresetn_i,
 		H_ENABLE       => henab_i,
 		V_ENABLE       => venab_i,
-		PLAYER         => '0',     -- 2-player mode
+		PLAYER         => ONE_PLAYER_MODE, -- Figure 11 checked-team suppression
 		TEAM           => team_i,
 		GOALIE         => goalie_i,
 		DEFENSEMENn    => defensemen_n_i,
@@ -247,7 +249,7 @@ U_PLAYERS_SUM: entity work.PlayersSumming
 		V1          => v1_i,
 		TEAM        => team_i,
 		DEFENSEMENn => defensemen_n_i,
-		ONE_PLAYER  => '0',
+		ONE_PLAYER  => ONE_PLAYER_MODE,
 		SYMBOL      => symbol_i,
 		BALL        => ball_i,
 		PADDLES     => paddles_i,
@@ -383,14 +385,24 @@ begin
 	end if;
 end process;
 
+-- Moving Hole circuit
+U_MOVING_HOLE: entity work.MovingHoleCircuit
+    port map (
+        C_PLUS_Dn => c_plus_d_n_i,
+        HSYNCn    => hsyncn_i,
+        STARTn    => start_n_i,
+        V128      => v128_i,
+        HOLE      => hole_i
+    );
+
 -- Window/Miss/Bounce circuit
 U_WINDOW_MISS_BOUNCE: entity work.WindowMissBounce
 	port map(
 		V64        => v64_i,
 		H256n      => h256n_i,
-		ONE_PLAYER => '0',
+		ONE_PLAYER => ONE_PLAYER_MODE,
 		ATRC       => atrc_i,
-		HOLE       => '1',
+		HOLE       => hole_i,
 		BALLn      => ball_n_i,
 		A_PLUS_Bn  => a_plus_b_n_i,
 		C_PLUS_Dn  => c_plus_d_n_i,
@@ -410,7 +422,7 @@ U_CATCH_KICK: entity work.CatchKickHorizontalDirection
 		HIT           => hit_i,
 		DEFENSEMENn   => defensemen_n_i,
 		TEAM          => team_i,
-		ONE_PLAYER    => '0',
+		ONE_PLAYER    => ONE_PLAYER_MODE,
 		WINDOWS       => windows_i,
 		H256n         => h256n_i,
 		H_BOUNCE      => h_bounce_i,
@@ -440,7 +452,7 @@ U_HORIZ_SPEED: entity work.HorizontalDirectionAndSpeed
 		HORIZ_DIR      => horiz_dir_qn_i,
 		GOAL           => sound_goal_i,
 		SCORE_SOUNDn   => score_sound_n_i,
-		ONE_PLAYER     => '0',
+		ONE_PLAYER     => ONE_PLAYER_MODE,
 		ATRC           => atrc_i,
 		GOALIE_FWD_HIT => '1',
 		HSPEED         => hspeed_i,

@@ -287,7 +287,7 @@ See [docs/PLAYERS_CIRCUIT_FIG11.md](docs/PLAYERS_CIRCUIT_FIG11.md) for pin-level
 | Circuit | File | Figure | ICs | Status |
 |---------|------|--------|-----|--------|
 | Hit Circuit | PlayersSumming.vhd | Fig 17 | K6(LS08) gate 4 | Done. BALL AND PADDLES → HIT. Uses spare K6 gate 4 (pins 12,13,11) in PlayersSumming. Wired to CatchKick. |
-| Moving Hole | - | Fig 18 | F3(LS02), M1(LS08), J1(LS00), E3(LS04), K1(LS74), H1(LS107), L4(IC9316), M4(IC9316) | Not yet implemented. 1-player mode only. |
+| Moving Hole | MovingHoleCircuit.vhd | Fig 18 | F3(LS02), M1(LS08), J1(LS00), E3(LS04), K1(LS74), H1(LS107 original mode), L4(IC9316), M4(IC9316) | Implemented and tested. Confirmed 9/11 presets yield 311/309-line periods; motion does not reverse on the 313-line raster. See docs/MOVING_HOLE_FIG18.md. |
 | Window/Miss/Bounce | WindowMissBounce.vhd | Fig 19 | F5(LS08), F4(LS02), H5(LS02), E3(LS04) | Done. Window circuit (2P: V64→goal openings at V=128-191), bounce (V_BOUNCE, H_BOUNCE, BOUNCEn), miss (MISS=H_BOUNCE AND WINDOWS). Idle (BALLn='1'). WINDOWS→PlayfieldCircuit, H_BOUNCE→CatchKick. PlayfieldCircuit exports (A+B)n, (C+D)n for bounce inputs. |
 | Score Circuit | - | Fig 21 | M2(LS48), M3(LS153), N3(LS153), K3(LS90), N2(LS107), J3(LS00), H2(LS00), K2(LS00), L2(LS00), J2(LS04), D3(LS08), L1(LS27), H3(LS02), N4(LS27), F3(LS02) | Not yet implemented. |
 | Sound Circuit | SoundCircuit.vhd | Fig 20 | J9(IC9602), M9(IC9602), E5(IC9602), L8(LS00), E7(LS20) | Implemented and simulated. Pin-accurate 9602 mode, adjustable M9 timing estimates; board Audio1_O on pin 71. See docs/SOUND_CIRCUIT_FIG20.md. |

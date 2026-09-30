@@ -1,6 +1,7 @@
 #!/bin/bash
 # Atari WCC GHDL Simulation Script
 # Usage: cd sim && bash run_sim.sh
+# ONE_PLAYER=1 exercises Figure 18 via the static gameplay mode generic.
 # Top-level: atari_wcc; testbench drives active-low coin/start inputs.
 #
 # Note: GHDL 0.37 mcode does not support default component binding.
@@ -69,6 +70,7 @@ ghdl -a --std=93 "$ROOT/PlayersStripedDefenseGoalie.vhd"
 ghdl -a --std=93 "$ROOT/PlayersMultiplexer.vhd"
 ghdl -a --std=93 "$ROOT/PlayersSumming.vhd"
 ghdl -a --std=93 "$ROOT/VerticalDirectionAndSpeed.vhd"
+ghdl -a --std=93 "$ROOT/MovingHoleCircuit.vhd"
 ghdl -a --std=93 "$ROOT/WindowMissBounce.vhd"
 ghdl -a --std=93 "$ROOT/CatchKickHorizontalDirection.vhd"
 ghdl -a --std=93 "$ROOT/HorizontalDirectionAndSpeed.vhd"
@@ -91,8 +93,10 @@ ghdl -e --std=93 tb_atari_wcc
 
 # Default 650 ms covers attract, credit, play and accelerated game expiry.
 STOP_MS=${STOP_MS:-650}
+ONE_PLAYER=${ONE_PLAYER:-0}
+case "$ONE_PLAYER" in 0|1) ;; *) echo "ONE_PLAYER must be 0 or 1" >&2; exit 1;; esac
 echo "[2/3] Running simulation (${STOP_MS} ms)..."
-ghdl -r --std=93 tb_atari_wcc --stop-time=${STOP_MS}ms --assert-level=error 2>&1
+ghdl -r --std=93 tb_atari_wcc -gONE_PLAYER_MODE="'$ONE_PLAYER'" --stop-time=${STOP_MS}ms --assert-level=error 2>&1
 
 # Check output
 if [ ! -f frame_data.txt ]; then
@@ -121,5 +125,9 @@ render_frame 9 frame_serve.png
 render_frame 20 frame_play.png
 render_frame 29 frame_game_over.png
 cp -f frame_play.png frame_output.png
+if [ "$ONE_PLAYER" = 1 ]; then
+    cp -f frame_output.png moving_hole_core.png
+    if [ -f gameplay.gif ]; then cp -f gameplay.gif moving_hole_core.gif; fi
+fi
 
 echo "=== Done ==="

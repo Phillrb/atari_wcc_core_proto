@@ -11,13 +11,38 @@ This project is a VHDL recreation of the classic 1974 discrete logic arcade game
 |-------|------|--------|
 | Phase 0 | Foundation: clock, H/V sync, sync summing | **Done** |
 | Phase 1 | Playfield circuit (Fig 9) | **Done** |
-| Phase 2 | Game control: electronic latch, credit, start, game select, time line, serve timing | Coin/start, attract, two-minute timer and serve integrated and simulation-tested; fixed two-player mode; analogue models and game-select integration remain |
+| Phase 2 | Game control: electronic latch, credit, start, game select, time line, serve timing | Coin/start, attract, two-minute timer and serve integrated and simulation-tested; static one-/two-player selection (board defaults to two-player); analogue models and runtime game-select integration remain |
 | Phase 3 | Ball system: motion, direction & speed, catch/kick, window/miss/bounce | **Done** |
 | Phase 4 | Players: all forwards, defense/goalie (solid + striped), ramp, mux, summing | **Done** |
-| Phase 5 | Score circuit, sound circuit, moving hole | Score circuit implemented and integrated; sound (Fig 20) implemented, integrated and simulation-tested; moving hole remains unimplemented |
+| Phase 5 | Score circuit, sound circuit, moving hole | Score circuit implemented and integrated; sound (Fig 20) implemented, integrated and simulation-tested; **moving hole (Fig 18) incomplete: opening renders but drifts upward and wraps instead of reversing** (see [notes](docs/MOVING_HOLE_FIG18.md)) |
 | Phase 6 | Video output and board integration | Board wrapper, PLL and composite output integrated; synthesis/fitting passed and hardware video tested. Original Fig 22 resistor network recreation remains outstanding |
 
 See [AGENTS.md](AGENTS.md) for the full circuit-by-circuit breakdown.
+
+### One-player status and known shortfalls
+
+One-player mode is **work in progress**. Simulation now shows the required solid
+left goalie and two solid forwards, with no solid defenders or checked players.
+The missing Figure 11 player-window mode connection has been corrected and
+regression-tested; the default two-player paid-play screenshot is unchanged.
+
+**Moving-hole reversal is not working.** The right-hand opening is 16 scanlines
+high, but currently moves upward and wraps around instead of reversing at the
+upper and lower playfield limits. The implemented 9/11 presets produce measured
+311/309-line recurrence against a 313-line frame, so both settings move upward.
+The passing counter tests describe that implementation; they do not establish
+correct up/down gameplay. Preset wiring, original IC behavior and frame timing
+must be reconciled with the source schematics before correcting this.
+
+Mode selection currently uses the static `ONE_PLAYER_MODE` generic (`'0'` = two
+players, `'1'` = one player). Figure 10 runtime selection and its attract-mode
+gating remain unfinished. The recent moving-hole and one-player changes have
+been verified in simulation, but have not yet been validated by Quartus
+synthesis/fitting or on FPGA hardware; earlier hardware results below apply to
+previous revisions.
+
+See the [detailed handoff and remaining correction plan](docs/ONE_PLAYER_HANDOFF.md)
+and [Figure 18 wiring and timing notes](docs/MOVING_HOLE_FIG18.md).
 
 ## Project Goals and Methodology
 - The VHDL code is designed to closely resemble the original schematics for maximum traceability and historical accuracy.
@@ -43,7 +68,8 @@ The design mirrors how the original 1970s hardware would work: discrete 74LS-ser
 
 ```bash
 cd sim
-bash run_sim.sh
+bash run_sim.sh                # Two players (default)
+ONE_PLAYER=1 bash run_sim.sh   # One player (known shortfalls above)
 ```
 
 This compiles the simulation sources, runs for **650 ms** by default, and calls the Python visualizer. Override the duration with, for example, `STOP_MS=900 bash run_sim.sh`. Output:

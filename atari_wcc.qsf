@@ -58,6 +58,7 @@ set_global_assignment -name VHDL_FILE Altera/clk_pll.vhd
 set_global_assignment -name VHDL_FILE PlayersMultiplexer.vhd
 set_global_assignment -name VHDL_FILE CreditCircuit.vhd
 set_global_assignment -name VHDL_FILE PlayersSolidForwards.vhd
+set_global_assignment -name VHDL_FILE MovingHoleCircuit.vhd
 set_global_assignment -name VHDL_FILE WindowMissBounce.vhd
 set_global_assignment -name VHDL_FILE PlayersSolidDefenseGoalie.vhd
 set_global_assignment -name VHDL_FILE HorizontalSync.vhd
