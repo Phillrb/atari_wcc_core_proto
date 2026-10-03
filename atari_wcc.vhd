@@ -8,7 +8,6 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity atari_wcc is
     Generic (
-        ONE_PLAYER_MODE : STD_LOGIC := '0'; -- Static selection until Figure 10 is integrated
         INPUT_STABLE_CLOCKS : positive := 35714;
         GAME_CLOCKS : positive := 857142840; -- 120 s at 7.142857 MHz
         SERVE_DELAY_CLOCKS : positive := 21428571 -- 3 s; also catch timeout
@@ -16,6 +15,7 @@ entity atari_wcc is
 	Port (
         Coin1_I : in STD_LOGIC := '1'; -- normally open to GND
         Start1_I : in STD_LOGIC := '1';
+        GameSelect_I : in STD_LOGIC := '1'; -- active low: 1 player; high: 2 players
         ATTRACT_DBG : out STD_LOGIC;
         CREDIT_DBG : out STD_LOGIC;
         START_DBG : out STD_LOGIC;
@@ -37,6 +37,7 @@ end atari_wcc;
 architecture Behavioral of atari_wcc is
 
 -- Internal signals
+signal selected_one_player_i, one_player_i : STD_LOGIC;
 signal clk7            : STD_LOGIC;
 signal hsync_i        : STD_LOGIC;
 signal hsyncn_i       : STD_LOGIC;
@@ -216,7 +217,7 @@ U_PLAYERS_VW: entity work.PlayersVerticalWindow
 		HRESETn        => hresetn_i,
 		H_ENABLE       => henab_i,
 		V_ENABLE       => venab_i,
-		PLAYER         => ONE_PLAYER_MODE, -- Figure 11 checked-team suppression
+		PLAYER         => one_player_i, -- Figure 11 checked-team suppression
 		TEAM           => team_i,
 		GOALIE         => goalie_i,
 		DEFENSEMENn    => defensemen_n_i,
@@ -249,7 +250,7 @@ U_PLAYERS_SUM: entity work.PlayersSumming
 		V1          => v1_i,
 		TEAM        => team_i,
 		DEFENSEMENn => defensemen_n_i,
-		ONE_PLAYER  => ONE_PLAYER_MODE,
+		ONE_PLAYER  => one_player_i,
 		SYMBOL      => symbol_i,
 		BALL        => ball_i,
 		PADDLES     => paddles_i,
@@ -344,6 +345,14 @@ U_SERVE: entity work.ServeTimingCircuit
 		STOPn         => stopn_i
 	);
 
+-- Figure 10: single-contact JAMMA selector replaces SPDT/D9 contact latch.
+U_MODE_INPUT: entity work.JammaSwitchAdapter
+    generic map(STABLE_CLOCKS=>INPUT_STABLE_CLOCKS)
+    port map(clk7, GameSelect_I, selected_one_player_i);
+U_GAME_SELECT: entity work.GameSelectCircuit
+    port map(GAME_SELECT_1=>selected_one_player_i, ATRCn=>atrcn_i,
+             ONE_PLAYER=>one_player_i);
+
 -- Figure 8 plus the explicit JAMMA/contact-latch adaptation boundary.
 U_COIN_INPUT: entity work.JammaSwitchAdapter
     generic map(STABLE_CLOCKS=>INPUT_STABLE_CLOCKS)
@@ -400,7 +409,7 @@ U_WINDOW_MISS_BOUNCE: entity work.WindowMissBounce
 	port map(
 		V64        => v64_i,
 		H256n      => h256n_i,
-		ONE_PLAYER => ONE_PLAYER_MODE,
+		ONE_PLAYER => one_player_i,
 		ATRC       => atrc_i,
 		HOLE       => hole_i,
 		BALLn      => ball_n_i,
@@ -422,7 +431,7 @@ U_CATCH_KICK: entity work.CatchKickHorizontalDirection
 		HIT           => hit_i,
 		DEFENSEMENn   => defensemen_n_i,
 		TEAM          => team_i,
-		ONE_PLAYER    => ONE_PLAYER_MODE,
+		ONE_PLAYER    => one_player_i,
 		WINDOWS       => windows_i,
 		H256n         => h256n_i,
 		H_BOUNCE      => h_bounce_i,
@@ -452,7 +461,7 @@ U_HORIZ_SPEED: entity work.HorizontalDirectionAndSpeed
 		HORIZ_DIR      => horiz_dir_qn_i,
 		GOAL           => sound_goal_i,
 		SCORE_SOUNDn   => score_sound_n_i,
-		ONE_PLAYER     => ONE_PLAYER_MODE,
+		ONE_PLAYER     => one_player_i,
 		ATRC           => atrc_i,
 		GOALIE_FWD_HIT => '1',
 		HSPEED         => hspeed_i,

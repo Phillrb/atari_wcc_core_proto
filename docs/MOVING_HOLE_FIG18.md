@@ -63,10 +63,10 @@ bash run_sim.sh                 # Existing default two-player mode
 ONE_PLAYER=1 bash run_sim.sh    # Exercise the moving opening in the full core
 ```
 
-`ONE_PLAYER_MODE` is a static top-level generic (default `'0'`), passed to all
-five gameplay mode inputs. It provides a way to exercise Figure 18 without
-claiming that the Figure 10 game-select circuit has been integrated. Credit
-configuration remains the existing one-game-per-coin selection.
+`ONE_PLAYER_MODE` is now a testbench-only generic driving the active-low
+`GameSelect_I` input. The core synchronizes and debounces that input, then
+Figure 10 C5 gates the selected mode with ATRCn for all five gameplay inputs.
+Credit configuration remains the existing one-game-per-coin selection.
 
 The focused suite checks the 9316, 7474, both 107 variants, asynchronous reset,
 16-line width, both presets, direction retention across reset, boundary gating,

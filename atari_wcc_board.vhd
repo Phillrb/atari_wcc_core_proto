@@ -9,6 +9,7 @@ entity atari_wcc_board is
 	Port (
 		Clk_50_I   : in  STD_LOGIC;
         Coin1_I : in STD_LOGIC; -- NO switch to GND, pull-up on pin 120
+        GameSelect_I : in STD_LOGIC := '1'; -- low=1P, high=2P; connect JAMMA TEST
         Start1_I : in STD_LOGIC; -- NO switch to GND, pull-up on pin 112
 		Reset_I    : in  STD_LOGIC;
 		Sync_O     : out STD_LOGIC;
@@ -42,7 +43,7 @@ begin
 	-- Core design (expects CLOCK_14)
 	U_CORE: entity work.atari_wcc
 		port map(
-            Coin1_I=>Coin1_I, Start1_I=>Start1_I,
+            Coin1_I=>Coin1_I, Start1_I=>Start1_I, GameSelect_I=>GameSelect_I,
             ATTRACT_DBG=>open, CREDIT_DBG=>open, START_DBG=>open, SERVE_DBG=>open,
 			CLOCK_14   => clock_14,
 			HSYNC      => hsync,

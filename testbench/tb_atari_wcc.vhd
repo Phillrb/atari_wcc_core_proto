@@ -35,9 +35,9 @@ clk14 <= not clk14 after CLK_HALF;
 
 -- Device under test
 DUT: entity work.atari_wcc
-    generic map(ONE_PLAYER_MODE=>ONE_PLAYER_MODE, GAME_CLOCKS=>2142857, SERVE_DELAY_CLOCKS=>357143) -- 300 ms game, 50 ms serve
+    generic map(GAME_CLOCKS=>2142857, SERVE_DELAY_CLOCKS=>357143) -- 300 ms game, 50 ms serve
 	port map(
-        Coin1_I=>coin_n, Start1_I=>start_button_n,
+        Coin1_I=>coin_n, Start1_I=>start_button_n, GameSelect_I=>not ONE_PLAYER_MODE,
         ATTRACT_DBG=>attract, CREDIT_DBG=>credit, START_DBG=>start_pulse, SERVE_DBG=>serve,
 		CLOCK_14    => clk14,
 		HSYNC       => hsync_o,

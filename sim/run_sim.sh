@@ -1,7 +1,7 @@
 #!/bin/bash
 # Atari WCC GHDL Simulation Script
 # Usage: cd sim && bash run_sim.sh
-# ONE_PLAYER=1 exercises Figure 18 via the static gameplay mode generic.
+# ONE_PLAYER=1 exercises Figure 18 via the active-low gameplay selector input.
 # Top-level: atari_wcc; testbench drives active-low coin/start inputs.
 #
 # Note: GHDL 0.37 mcode does not support default component binding.
@@ -83,7 +83,12 @@ ghdl -a --std=93 "$ROOT/JammaSwitchAdapter.vhd"
 ghdl -a --std=93 "$ROOT/CreditCircuit.vhd"
 ghdl -a --std=93 "$ROOT/ElectronicLatchCircuit.vhd"
 ghdl -a --std=93 "$ROOT/StartCircuit.vhd"
+ghdl -a --std=93 "$ROOT/GameSelectCircuit.vhd"
 ghdl -a --std=93 "$ROOT/atari_wcc.vhd"
+
+# Focused runtime selector checks before the full video capture.
+ghdl -a --std=93 "$ROOT/testbench/tb_GameSelect.vhd"
+ghdl -r --std=93 tb_GameSelect --stop-time=1us --assert-level=error
 
 # Testbench
 ghdl -a --std=93 "$ROOT/testbench/tb_atari_wcc.vhd"

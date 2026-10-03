@@ -254,7 +254,7 @@ Timing: 455 clocks/scanline, 313 lines/frame, 50.27 Hz (PAL).
 | Electronic Latch | ElectronicLatchCircuit.vhd | Fig 8 | A8(LS04), transistors Q1-Q3 | Integrated and tested; transistor latch remains a digital abstraction, with coin drive priority and power-on attract. |
 | Credit | CreditCircuit.vhd | Fig 8 | A8(LS04), B8(LS74), C8(LS00), C9(LS02), A9(LS74) | Integrated and tested. B8 ripple wiring, C9 type and A9 clocks/preset corrected; board selects one game per coin. |
 | Start | StartCircuit.vhd | Fig 8 | A8(LS04), C9(LS02), B9(LS74) | Integrated and tested. JAMMA adapter supplies settled switch state; C9/B9 control start and attract. |
-| Game Select | GameSelectCircuit.vhd | Fig 10 | D9(LS74 half), C5(LS08) | Exists. Review needed. |
+| Game Select | GameSelectCircuit.vhd | Fig 10 | D9 contact latch (board adapter), C5(LS08) | Active-low GameSelect_I, synchronized/debounced; C5 gates selection with ATRCn. Runtime selector tested. |
 | Time Line | TimeLineCircuit.vhd | Fig 8 | A2(LS10), N4(LS27), K1(LS74), D9(LS04), E9(555), J2(LS04) | Integrated with two-minute digital RC/555 timing and tested expiry/rearm. Existing timer window approximation remains; not fully pin-accurate. |
 | Serve Timing | ServeTimingCircuit.vhd | Fig 12 | J5(9602), L5(LS74), H4(LS02) | Integrated and tested with pin-accurate IC9602 triggers and three-second board serve/catch delays. |
 

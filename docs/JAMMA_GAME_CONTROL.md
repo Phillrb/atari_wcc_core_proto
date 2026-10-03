@@ -1,7 +1,7 @@
 # JAMMA inputs and game control
 
 The board boots into attract mode. A coin followed by Start begins a two-minute
-(two-player) game; one game is enabled per coin. The time-line circuit ends the
+game in the selected mode; one game is enabled per coin. The time-line circuit ends the
 game and returns to attract, with sound muted and scores retained.
 
 ## Electrical and schematic boundary
@@ -10,6 +10,7 @@ game and returns to attract, with sound muted and scores retained.
 | --- | --- | --- | --- |
 | Coin1_I | 120 | High through weak pull-up | Normally-open contact to GND |
 | Start1_I | 112 | High through weak pull-up | Normally-open contact to GND |
+| GameSelect_I | Assigned by JAMMA wrapper | High = two players | Low = one player |
 
 These are the Sprint2 connector assignments. Figure 8 instead shows grounded
 common SPDT switches feeding contact-memory circuitry. `JammaSwitchAdapter`
@@ -106,3 +107,30 @@ Timing requirements are not met, including incomplete clock/I/O constraints and
 hold violations. Quartus also emulates dual asynchronous preset/clear registers
 with latch circuitry. Hardware input testing, power-up behavior and listening
 remain to be checked on the board; compilation is not timing closure.
+
+## Runtime player selector (Figure 10)
+
+Map the active-low TEST signal to `GameSelect_I` on `atari_wcc` or
+`atari_wcc_board`. Both ports default high (two players). The board QSF enables
+a weak pull-up; the JAMMA wrapper supplies the physical pin assignment.
+The selector is a level input, not a push-to-toggle control. A maintained
+switch keeps the selected mode; a momentary TEST button selects one player
+only while held. Changes apply during play after the 5 ms debounce interval.
+
+`JammaSwitchAdapter` replaces the original SPDT/D9 inverter contact latch.
+`GameSelectCircuit` implements C5 pins 12/13/11 using an explicit LS08;
+ATRCn forces its output low during attract. The old unused LS74 model of D9
+was incorrect. The settled, gated mode drives all five gameplay consumers;
+it does not change the independent games-per-coin configuration.
+
+`testbench/tb_GameSelect.vhd` checks both selector levels, bounce rejection,
+runtime changes, and attract/expiry gating. Full-core captures are generated
+with `cd sim && bash run_sim.sh` and `ONE_PLAYER=1 bash run_sim.sh`.
+
+Validation: selector tests and both 650 ms full-core runs passed the
+attract/coin/start/serve/expiry assertions. Quartus 13.0sp1 analysis and
+elaboration passed with zero errors (28 warnings for unused signals, modeled
+latches and unavailable parallel-compilation licensing). No fitting or hardware
+validation was performed. Captures: [two players](validation/game_select/two_player.png),
+[one player](validation/game_select/one_player.png), and full-sequence GIFs in
+`docs/validation/game_select/`.

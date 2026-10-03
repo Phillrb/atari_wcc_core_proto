@@ -52,7 +52,7 @@ These blocks exist but are not yet verified against schematics. Review before re
 | Electronic Latch | ElectronicLatchCircuit.vhd | Review Fig 8; confirm transistor latch model is adequate. |
 | Credit | CreditCircuit.vhd | Review against Fig 8; TTL-only. |
 | Start | StartCircuit.vhd | Review against Fig 8. |
-| Game Select | GameSelectCircuit.vhd | Review Fig 10. |
+| Game Select | GameSelectCircuit.vhd | Runtime GameSelect_I with board contact adapter and Fig 10 C5 attract gating; tested. |
 | Time Line | TimeLineCircuit.vhd | Review Fig 8; 555 model. |
 | Serve Timing | ServeTimingCircuit.vhd | Review Fig 12; one-shot model. |
 
