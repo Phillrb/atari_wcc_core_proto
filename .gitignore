@@ -39,3 +39,8 @@ sim/moving_hole.gif
 sim/moving_hole_trace.csv
 sim/moving_hole_core.png
 sim/moving_hole_core.gif
+
+# Temporary spinner video regression outputs
+sim/spinner_frame_*.png
+sim/spinner_limits.png
+sim/spinner_gameplay.gif

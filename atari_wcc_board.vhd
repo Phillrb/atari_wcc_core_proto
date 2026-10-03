@@ -6,7 +6,14 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
 entity atari_wcc_board is
+	Generic (
+        SPINNER_POSITION_MIN : natural := 82;
+        SPINNER_POSITION_MAX : natural := 154;
+        SPINNER_STEP_SIZE : positive := 8;
+        SPINNER_REVERSE : boolean := false
+    );
 	Port (
+		SpinnerA_I, SpinnerB_I : in STD_LOGIC := '0';
 		Clk_50_I   : in  STD_LOGIC;
         Coin1_I : in STD_LOGIC; -- NO switch to GND, pull-up on pin 120
         GameSelect_I : in STD_LOGIC := '1'; -- low=1P, high=2P; connect JAMMA TEST
@@ -30,7 +37,18 @@ architecture rtl of atari_wcc_board is
 	signal video    : STD_LOGIC;
 	signal clk7_dbg : STD_LOGIC;
 	signal hblank   : STD_LOGIC;
+    signal solid_fwd_position : STD_LOGIC_VECTOR(9 downto 0);
 begin
+    -- Use CLOCK_7 throughout: no asynchronous multi-bit position crossing.
+    U_SPINNER: entity work.SpinnerAdapter
+        generic map(POSITION_MIN=>SPINNER_POSITION_MIN,
+                    POSITION_MAX=>SPINNER_POSITION_MAX,
+                    STEP_SIZE=>SPINNER_STEP_SIZE,
+                    REVERSE_DIRECTION=>SPINNER_REVERSE)
+        port map(CLK=>clk7_dbg, RESETn=>Reset_I,
+                 QUAD_A=>SpinnerA_I, QUAD_B=>SpinnerB_I,
+                 FRAME_SYNC=>vsync, COUNT_OUT=>open,
+                 POSITION_OUT=>solid_fwd_position);
 	-- Board button is active low; preserve the core's active-high button interface.
 	pushbtn_i <= not Reset_I;
 	-- PLL: 50 MHz -> 14.285714 MHz (same stack as MaSTer)
@@ -43,6 +61,7 @@ begin
 	-- Core design (expects CLOCK_14)
 	U_CORE: entity work.atari_wcc
 		port map(
+            SolidFwdPosition_I=>solid_fwd_position,
             Coin1_I=>Coin1_I, Start1_I=>Start1_I, GameSelect_I=>GameSelect_I,
             ATTRACT_DBG=>open, CREDIT_DBG=>open, START_DBG=>open, SERVE_DBG=>open,
 			CLOCK_14   => clock_14,

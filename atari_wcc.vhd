@@ -13,6 +13,11 @@ entity atari_wcc is
         SERVE_DELAY_CLOCKS : positive := 21428571 -- 3 s; also catch timeout
     );
 	Port (
+        -- Board adapter supplies ramp thresholds, not raw ADC codes.
+        SolidFwdPosition_I : in STD_LOGIC_VECTOR(9 downto 0) := "0001100100";
+        SolidDefPosition_I : in STD_LOGIC_VECTOR(9 downto 0) := "0000000000";
+        StripedFwdPosition_I : in STD_LOGIC_VECTOR(9 downto 0) := "0001100100";
+        StripedDefPosition_I : in STD_LOGIC_VECTOR(9 downto 0) := "0000000000";
         Coin1_I : in STD_LOGIC := '1'; -- normally open to GND
         Start1_I : in STD_LOGIC := '1';
         GameSelect_I : in STD_LOGIC := '1'; -- active low: 1 player; high: 2 players
@@ -272,7 +277,7 @@ U_SOLID_FWD: entity work.PlayersSolidForwards
 	port map(
 		HSYNC      => hsync_i,
 		RAMP_VALUE => ramp_value_i,
-		POSITION   => "0001100100",
+		POSITION   => SolidFwdPosition_I,
 		ATRCn      => atrcn_i,
 		E2         => solid_fwd_e2,
 		B2         => solid_fwd_b2,
@@ -286,7 +291,7 @@ U_SOLID_DEF: entity work.PlayersSolidDefenseGoalie
 		HSYNC      => hsync_i,
 		VSYNCn     => vsyncn_i,
 		RAMP_VALUE => ramp_value_i,
-		POSITION   => "0000000000",
+		POSITION   => SolidDefPosition_I,
 		ATRCn      => atrcn_i,
 		GOALIE     => goalie_i,
 		E1         => solid_def_e1,
@@ -300,7 +305,7 @@ U_STRIPED_FWD: entity work.PlayersStripedForwards
 	port map(
 		HSYNC      => hsync_i,
 		RAMP_VALUE => ramp_value_i,
-		POSITION   => "0001100100",
+		POSITION   => StripedFwdPosition_I,
 		ATRCn      => atrcn_i,
 		E3         => striped_fwd_e3,
 		B3         => striped_fwd_b3,
@@ -314,7 +319,7 @@ U_STRIPED_DEF: entity work.PlayersStripedDefenseGoalie
 		HSYNC      => hsync_i,
 		VSYNCn     => vsyncn_i,
 		RAMP_VALUE => ramp_value_i,
-		POSITION   => "0000000000",
+		POSITION   => StripedDefPosition_I,
 		ATRCn      => atrcn_i,
 		GOALIE     => goalie_i,
 		J9_P12     => '0',

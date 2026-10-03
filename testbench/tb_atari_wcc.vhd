@@ -1,9 +1,10 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
 use STD.TEXTIO.ALL;
 
 entity tb_atari_wcc is
-    generic (ONE_PLAYER_MODE : STD_LOGIC := '0');
+    generic (ONE_PLAYER_MODE : STD_LOGIC := '0'; SPINNER_TEST : boolean := false);
 end tb_atari_wcc;
 
 architecture Behavioral of tb_atari_wcc is
@@ -27,8 +28,43 @@ signal clk7_prev : STD_LOGIC := '0';
 signal vsync_prev : STD_LOGIC := '0';
 signal frame_count : integer := 0;
 signal capture_en : boolean := true;
+signal spinner_a, spinner_b : std_logic := '0';
+signal spinner_count, spinner_position : std_logic_vector(9 downto 0);
+signal solid_position : std_logic_vector(9 downto 0) := "0001100100";
 
 begin
+
+spinner_enabled: if SPINNER_TEST generate
+    input_adapter: entity work.SpinnerAdapter
+        port map(CLK=>clk7_dbg, RESETn=>'1', QUAD_A=>spinner_a, QUAD_B=>spinner_b,
+                 FRAME_SYNC=>vsync_o, COUNT_OUT=>spinner_count, POSITION_OUT=>spinner_position);
+    solid_position <= spinner_position;
+    sweep: process
+        procedure state(value : std_logic_vector(1 downto 0)) is
+        begin spinner_a<=value(1);spinner_b<=value(0);wait for 20 us;end;
+        procedure turn(up : boolean) is
+        begin
+            if up then state("01");state("11");state("10");state("00");
+            else state("10");state("11");state("01");state("00");end if;
+        end;
+    begin
+        wait for 200 ms;
+        for i in 1 to 70 loop turn(false);end loop;
+        wait for 40 ms;
+        assert unsigned(spinner_count)=0 and unsigned(spinner_position)=82
+            report "spinner top limit not reached" severity failure;
+        wait for 15 ms;
+        for i in 1 to 140 loop turn(true);wait for 700 us;end loop;
+        wait for 40 ms;
+        assert unsigned(spinner_count)=1023 and unsigned(spinner_position)=154
+            report "spinner bottom limit not reached" severity failure;
+        report "Full core spinner sweep reached both limits";
+        wait;
+    end process;
+end generate;
+spinner_disabled: if not SPINNER_TEST generate
+    solid_position <= "0001100100";
+end generate;
 
 -- 14.318 MHz clock generation
 clk14 <= not clk14 after CLK_HALF;
@@ -37,6 +73,7 @@ clk14 <= not clk14 after CLK_HALF;
 DUT: entity work.atari_wcc
     generic map(GAME_CLOCKS=>2142857, SERVE_DELAY_CLOCKS=>357143) -- 300 ms game, 50 ms serve
 	port map(
+        SolidFwdPosition_I=>solid_position,
         Coin1_I=>coin_n, Start1_I=>start_button_n, GameSelect_I=>not ONE_PLAYER_MODE,
         ATTRACT_DBG=>attract, CREDIT_DBG=>credit, START_DBG=>start_pulse, SERVE_DBG=>serve,
 		CLOCK_14    => clk14,

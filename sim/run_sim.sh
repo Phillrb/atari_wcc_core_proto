@@ -80,6 +80,7 @@ ghdl -a --std=93 "$ROOT/TimeLineCircuit.vhd"
 ghdl -a --std=93 "$ROOT/ScoreCircuit.vhd"
 ghdl -a --std=93 "$ROOT/SoundCircuit.vhd"
 ghdl -a --std=93 "$ROOT/JammaSwitchAdapter.vhd"
+ghdl -a --std=93 "$ROOT/SpinnerAdapter.vhd"
 ghdl -a --std=93 "$ROOT/CreditCircuit.vhd"
 ghdl -a --std=93 "$ROOT/ElectronicLatchCircuit.vhd"
 ghdl -a --std=93 "$ROOT/StartCircuit.vhd"
@@ -91,6 +92,8 @@ ghdl -a --std=93 "$ROOT/testbench/tb_GameSelect.vhd"
 ghdl -r --std=93 tb_GameSelect --stop-time=1us --assert-level=error
 
 # Testbench
+ghdl -a --std=93 "$ROOT/testbench/tb_SpinnerAdapter.vhd"
+ghdl -r --std=93 tb_SpinnerAdapter --stop-time=300us --assert-level=error
 ghdl -a --std=93 "$ROOT/testbench/tb_atari_wcc.vhd"
 
 # Elaborate
@@ -99,9 +102,11 @@ ghdl -e --std=93 tb_atari_wcc
 # Default 650 ms covers attract, credit, play and accelerated game expiry.
 STOP_MS=${STOP_MS:-650}
 ONE_PLAYER=${ONE_PLAYER:-0}
+SPINNER_TEST=${SPINNER_TEST:-false}
+case "$SPINNER_TEST" in true|false) ;; *) echo "SPINNER_TEST must be true or false" >&2; exit 1;; esac
 case "$ONE_PLAYER" in 0|1) ;; *) echo "ONE_PLAYER must be 0 or 1" >&2; exit 1;; esac
 echo "[2/3] Running simulation (${STOP_MS} ms)..."
-ghdl -r --std=93 tb_atari_wcc -gONE_PLAYER_MODE="'$ONE_PLAYER'" --stop-time=${STOP_MS}ms --assert-level=error 2>&1
+ghdl -r --std=93 tb_atari_wcc -gONE_PLAYER_MODE="'$ONE_PLAYER'" -gSPINNER_TEST="$SPINNER_TEST" --stop-time=${STOP_MS}ms --assert-level=error 2>&1
 
 # Check output
 if [ ! -f frame_data.txt ]; then
@@ -133,6 +138,10 @@ cp -f frame_play.png frame_output.png
 if [ "$ONE_PLAYER" = 1 ]; then
     cp -f frame_output.png moving_hole_core.png
     if [ -f gameplay.gif ]; then cp -f gameplay.gif moving_hole_core.gif; fi
+fi
+
+if [ "$SPINNER_TEST" = true ]; then
+    python3 check_spinner_frames.py
 fi
 
 echo "=== Done ==="
