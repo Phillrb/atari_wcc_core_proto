@@ -1,6 +1,8 @@
 -- Vertical Direction and Speed Circuit - Goal IV (WCC) TM-035 Figure 14
 -- ICs: D7(IC9314), D6(LS74), C7(LS86), B7(LS02), F6(LS00), C6(LS04), A7(LS83)
 -- Converts player-segment data PP2, PP3, PP4 into vertical-motion code VSPEED(3:0).
+-- Approved 313-line adaptation: A7 fixed B=3 rather than Figure 14's B=6.
+-- STOP=7 (Figure 16 annotation); see docs/VERTICAL_BALL_313_LINE_ADAPTATION.md.
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -128,19 +130,21 @@ begin
             P8_Y3  => open
         );
 
-    -- A7 (LS83): 4-bit adder. A = NOR outputs; B = constants; CIN = inverted F6
+    -- A7 (LS83): fixed B=0011 centers STOP on the 313-line raster.
+    -- Figure 14 draws B=0110, yielding STOP=10 and an upward 3-line drift.
+    -- Only the fixed straps change; segment, bounce and STOP gates are retained.
     A7: entity work.LS83
         port map(
             P1_A4   => '0',
             P2_S3   => A7_S3,
             P3_A3   => F6_Y4,
-            P4_B3   => '1',
+            P4_B3   => '0',
             P6_S2   => A7_S2,
             P7_B2   => '1',
             P8_A2   => B7_Y2,
             P9_S1   => A7_S1,
             P10_A1  => B7_Y1,
-            P11_B1  => '0',
+            P11_B1  => '1',
             P13_CIN => C6_Y3,
             P14_COUT=> open,
             P15_S4  => A7_S4,

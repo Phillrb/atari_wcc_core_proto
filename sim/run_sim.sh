@@ -96,6 +96,9 @@ ghdl -a --std=93 "$ROOT/testbench/tb_IC9314.vhd"
 ghdl -r --std=93 tb_IC9314 --stop-time=40us --assert-level=error
 ghdl -a --std=93 "$ROOT/testbench/tb_VerticalHitHold.vhd"
 ghdl -r --std=93 tb_VerticalHitHold --stop-time=10us --assert-level=error
+ghdl -a --std=93 "$ROOT/testbench/tb_VerticalBallMotion.vhd"
+ghdl -r --std=93 tb_VerticalBallMotion --assert-level=error
+python3 visualize_vertical_ball.py
 
 # Testbench
 ghdl -a --std=93 "$ROOT/testbench/tb_SpinnerAdapter.vhd"

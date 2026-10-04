@@ -26,7 +26,7 @@ begin
         v128_n <= '0'; wait for 20 ns;
         bounce <= '1'; wait for 20 ns; bounce <= '0';
         serve_n <= '1'; wait for 20 ns;
-        assert speed="1101" report "serve motion code" severity failure;
+        assert speed="1010" report "serve motion code" severity failure;
         for segment in 0 to 7 loop
             held := speed;
             -- Player pixels without ball pixels: no collision anywhere on this scan.
@@ -46,21 +46,21 @@ begin
             -- Actual overlap loads the selected player segment.
             pp <= std_logic_vector(to_unsigned(segment,3)); wait for 20 ns;
             symbol <= '1'; wait for 20 ns;
-            if segment < 4 then expected := 13-segment;
-            else expected := 14-segment; end if;
+            if segment < 4 then expected := 10-segment;
+            else expected := 11-segment; end if;
             assert hit='1' and unsigned(speed)=expected
                 report "real hit did not load player segment" severity failure;
             ball <= '0'; wait for 20 ns;
         end loop;
         -- Wall bounce and STOP remain independent of the player latch enable.
         v128_n <= '0'; bounce <= '1'; wait for 20 ns;
-        assert speed="1101" report "wall bounce failed" severity failure;
+        assert speed="1010" report "wall bounce failed" severity failure;
         bounce <= '0'; stop <= '1'; stop_n <= '0'; wait for 20 ns;
-        assert speed="1010" report "STOP motion code failed" severity failure;
+        assert speed="0111" report "STOP motion code failed" severity failure;
         stop <= '0'; stop_n <= '1'; wait for 20 ns;
-        assert speed="1101" report "STOP release changed stored motion" severity failure;
+        assert speed="1010" report "STOP release changed stored motion" severity failure;
         serve_n <= '0'; wait for 20 ns;
-        assert speed="0111" report "serve did not reset stored segment" severity failure;
+        assert speed="0100" report "serve did not reset stored segment" severity failure;
         report "No-contact movement, all hit segments, bounce, STOP and serve passed";
         wait;
     end process;
