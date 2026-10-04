@@ -91,6 +91,12 @@ ghdl -a --std=93 "$ROOT/atari_wcc.vhd"
 ghdl -a --std=93 "$ROOT/testbench/tb_GameSelect.vhd"
 ghdl -r --std=93 tb_GameSelect --stop-time=1us --assert-level=error
 
+# Figure 14 latch must retain player-segment data between actual hits.
+ghdl -a --std=93 "$ROOT/testbench/tb_IC9314.vhd"
+ghdl -r --std=93 tb_IC9314 --stop-time=40us --assert-level=error
+ghdl -a --std=93 "$ROOT/testbench/tb_VerticalHitHold.vhd"
+ghdl -r --std=93 tb_VerticalHitHold --stop-time=10us --assert-level=error
+
 # Testbench
 ghdl -a --std=93 "$ROOT/testbench/tb_SpinnerAdapter.vhd"
 ghdl -r --std=93 tb_SpinnerAdapter --stop-time=300us --assert-level=error

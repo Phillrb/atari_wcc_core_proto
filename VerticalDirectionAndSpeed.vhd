@@ -29,7 +29,7 @@ architecture Schematic of VerticalDirectionAndSpeed is
     signal F6_Y4 : STD_LOGIC;
     signal C6_Y3 : STD_LOGIC;
     signal A7_S1, A7_S2, A7_S3, A7_S4 : STD_LOGIC;
-    signal hitn_i : STD_LOGIC;  -- internal HITn (feeds D7 OEn and entity output)
+    signal hitn_i : STD_LOGIC;  -- internal HITn (feeds D7 active-low latch enable and entity output)
 begin
     -- C6 (LS04): inverters for HIT and F6 output
     C6: entity work.LS04
