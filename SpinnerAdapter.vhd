@@ -10,7 +10,7 @@ entity SpinnerAdapter is
     generic (
         POSITION_MIN : natural := 82;
         POSITION_MAX : natural := 154;
-        STEP_SIZE : positive := 8; -- 128 A rising edges for approximately full travel
+        STEP_SIZE : positive := 32; -- 32 A rising edges for full travel
         REVERSE_DIRECTION : boolean := false
     );
     port (

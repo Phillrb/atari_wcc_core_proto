@@ -9,7 +9,7 @@ entity atari_wcc_board is
 	Generic (
         SPINNER_POSITION_MIN : natural := 82;
         SPINNER_POSITION_MAX : natural := 154;
-        SPINNER_STEP_SIZE : positive := 8;
+        SPINNER_STEP_SIZE : positive := 32;
         SPINNER_REVERSE : boolean := false
     );
 	Port (

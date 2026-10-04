@@ -38,11 +38,12 @@ The board wrapper exposes these generics (edit defaults and rebuild):
 | --- | --- | --- |
 | SPINNER_POSITION_MIN | 82 | Top endpoint, in existing ramp/scanline units |
 | SPINNER_POSITION_MAX | 154 | Bottom endpoint |
-| SPINNER_STEP_SIZE | 8 | Counter increment per A rising edge |
+| SPINNER_STEP_SIZE | 32 | Counter increment per A rising edge |
 | SPINNER_REVERSE | false | Set true to reverse movement, or swap A and B |
 
-The raw counter is 0–1023, starts at 512, and saturates at both ends. With step 8,
-full travel takes 128 A rising edges; this is not necessarily one shaft revolution.
+The raw counter is 0–1023, starts at 512, and saturates at both ends. With step 32,
+full travel takes 32 A rising edges (4× the movement of the former step-8 default).
+This is not necessarily one shaft revolution.
 Both phases pass through three synchronization registers. Startup seeds the
 phase history without counting. Only an A rising edge with unchanged B counts;
 simultaneous two-bit jumps are rejected. This is x1 decoding, not a mechanical

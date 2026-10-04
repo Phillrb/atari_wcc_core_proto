@@ -33,7 +33,7 @@ begin
         end loop;
         reset_n<='0';state("00");reset_n<='1';wait for 400 ns;
         turn(true);
-        assert unsigned(count)=520 and unsigned(reverse_count)=504
+        assert unsigned(count)=544 and unsigned(reverse_count)=480
             report "direction / x1 counting failed" severity failure;
         turn(false);
         assert unsigned(count)=512 report "reverse step failed" severity failure;
@@ -49,14 +49,19 @@ begin
         frame;
         assert unsigned(position)=154 report "upper position mapping failed" severity failure;
         turn(false);
-        assert unsigned(count)=1015 report "cannot leave upper stop" severity failure;
+        assert unsigned(count)=991 report "cannot leave upper stop" severity failure;
         for i in 1 to 150 loop turn(false);end loop;
         assert unsigned(count)=0 and unsigned(reverse_count)=1023
             report "lower saturation failed" severity failure;
         frame;
         assert unsigned(position)=82 report "lower position mapping failed" severity failure;
         turn(true);
-        assert unsigned(count)=8 report "cannot leave lower stop" severity failure;
+        assert unsigned(count)=32 report "cannot leave lower stop" severity failure;
+        -- Full travel now needs 32 encoder pulses, versus 128 at step 8.
+        for i in 2 to 31 loop turn(true);end loop;
+        assert unsigned(count)=992 report "travel saturated too early" severity failure;
+        turn(true);
+        assert unsigned(count)=1023 report "32 pulses did not reach full travel" severity failure;
         reset_n<='0';wait for 200 ns;
         assert unsigned(count)=512 and unsigned(position)=118
             report "reset did not recenter" severity failure;
