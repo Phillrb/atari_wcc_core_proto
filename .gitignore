@@ -50,3 +50,8 @@ sim/vertical_ball_periods.csv
 sim/vertical_ball_trajectory.csv
 sim/vertical_ball_timing.png
 sim/vertical_ball_bounce.gif
+
+# ATtiny SPI control regression outputs
+sim/spi_frame_*.png
+sim/spi_limits.png
+sim/spi_controls.gif

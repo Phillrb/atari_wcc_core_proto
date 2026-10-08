@@ -8,6 +8,8 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity atari_wcc is
     Generic (
+        SOLID_DEF_PLAY_GAP : natural := 85;
+        CHECKS_DEF_PLAY_GAP : natural := 83;
         INPUT_STABLE_CLOCKS : positive := 35714;
         GAME_CLOCKS : positive := 857142840; -- 120 s at 7.142857 MHz
         SERVE_DELAY_CLOCKS : positive := 21428571 -- 3 s; also catch timeout
@@ -287,6 +289,7 @@ U_SOLID_FWD: entity work.PlayersSolidForwards
 
 -- Solid Defense/Goalie
 U_SOLID_DEF: entity work.PlayersSolidDefenseGoalie
+    generic map(PLAY_INITIAL_GAP=>SOLID_DEF_PLAY_GAP)
 	port map(
 		HSYNC      => hsync_i,
 		VSYNCn     => vsyncn_i,
@@ -315,6 +318,7 @@ U_STRIPED_FWD: entity work.PlayersStripedForwards
 
 -- Striped Defense
 U_STRIPED_DEF: entity work.PlayersStripedDefenseGoalie
+    generic map(PLAY_INITIAL_GAP=>CHECKS_DEF_PLAY_GAP)
 	port map(
 		HSYNC      => hsync_i,
 		VSYNCn     => vsyncn_i,

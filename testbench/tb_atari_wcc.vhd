@@ -4,7 +4,7 @@ use IEEE.NUMERIC_STD.ALL;
 use STD.TEXTIO.ALL;
 
 entity tb_atari_wcc is
-    generic (ONE_PLAYER_MODE : STD_LOGIC := '0'; SPINNER_TEST : boolean := false);
+    generic (ONE_PLAYER_MODE : STD_LOGIC := '0'; SPINNER_TEST : boolean := false; SPI_TEST : boolean := false);
 end tb_atari_wcc;
 
 architecture Behavioral of tb_atari_wcc is
@@ -30,11 +30,15 @@ signal frame_count : integer := 0;
 signal capture_en : boolean := true;
 signal spinner_a, spinner_b : std_logic := '0';
 signal spinner_count, spinner_position : std_logic_vector(9 downto 0);
+signal spi_cs, spi_sck, spi_mosi, spi_miso : std_logic;
+signal spi_packet : std_logic_vector(63 downto 0) := x"02BC02BC02BC02BC";
+signal def_solid, def_checks : std_logic_vector(9 downto 0) := (others=>'0');
+signal fwd_checks : std_logic_vector(9 downto 0) := "0001100100";
 signal solid_position : std_logic_vector(9 downto 0) := "0001100100";
 
 begin
 
-spinner_enabled: if SPINNER_TEST generate
+spinner_enabled: if SPINNER_TEST and not SPI_TEST generate
     input_adapter: entity work.SpinnerAdapter
         port map(CLK=>clk7_dbg, RESETn=>'1', QUAD_A=>spinner_a, QUAD_B=>spinner_b,
                  FRAME_SYNC=>vsync_o, COUNT_OUT=>spinner_count, POSITION_OUT=>spinner_position);
@@ -62,8 +66,45 @@ spinner_enabled: if SPINNER_TEST generate
         wait;
     end process;
 end generate;
-spinner_disabled: if not SPINNER_TEST generate
+spinner_disabled: if not SPINNER_TEST and not SPI_TEST generate
     solid_position <= "0001100100";
+end generate;
+
+assert not (SPINNER_TEST and SPI_TEST) report "Choose one controls test" severity failure;
+spi_enabled: if SPI_TEST generate
+    adapter: entity work.SPIAdapter
+        port map(CLK=>clk7_dbg, RESETn=>'1', FRAME_SYNC=>vsync_o,
+            SPI_MISO=>spi_miso, SPI_SCLK=>spi_sck, SPI_CSn=>spi_cs, SPI_MOSI=>spi_mosi,
+            SOLID_DEF=>def_solid, SOLID_FWD=>solid_position,
+            CHECKS_DEF=>def_checks, CHECKS_FWD=>fwd_checks,
+            RAW_SD=>open, RAW_SF=>open, RAW_CD=>open, RAW_CF=>open,
+            PACKET_VALID=>open, PACKET_ERROR=>open);
+    tiny: entity work.ATtinySPITestModel port map(spi_cs,spi_sck,spi_mosi,spi_packet,spi_miso);
+    sequence_spi: process
+        variable sample : std_logic_vector(15 downto 0);
+    begin
+        wait for 240 ms;
+        assert unsigned(def_solid)=10 and unsigned(def_checks)=10 and
+               unsigned(solid_position)=82 and unsigned(fwd_checks)=82
+            report "SPI top positions failed" severity failure;
+        wait for 10 ms;
+        for i in 1 to 20 loop
+            sample:=std_logic_vector(to_unsigned(700+i*323/20,16));
+            spi_packet<=sample & sample & sample & sample;
+            wait for 5 ms;
+        end loop;
+        wait for 50 ms;
+        assert unsigned(def_solid)=82 and unsigned(def_checks)=82 and
+               unsigned(solid_position)=154 and unsigned(fwd_checks)=154
+            report "SPI bottom positions failed" severity failure;
+        spi_packet<=x"03FF02BC02BC03FF";
+        wait for 60 ms;
+        assert unsigned(def_solid)=82 and unsigned(def_checks)=10 and
+               unsigned(solid_position)=82 and unsigned(fwd_checks)=154
+            report "SPI independent channels failed" severity failure;
+        report "Full core four-channel SPI sweep and independence passed";
+        wait;
+    end process;
 end generate;
 
 -- 14.318 MHz clock generation
@@ -71,9 +112,13 @@ clk14 <= not clk14 after CLK_HALF;
 
 -- Device under test
 DUT: entity work.atari_wcc
-    generic map(GAME_CLOCKS=>2142857, SERVE_DELAY_CLOCKS=>357143) -- 300 ms game, 50 ms serve
+    generic map(GAME_CLOCKS=>2142857, SERVE_DELAY_CLOCKS=>357143,
+        SOLID_DEF_PLAY_GAP=>85-28*boolean'pos(SPI_TEST),
+        CHECKS_DEF_PLAY_GAP=>83-28*boolean'pos(SPI_TEST)) -- 300 ms game, 50 ms serve
 	port map(
         SolidFwdPosition_I=>solid_position,
+        SolidDefPosition_I=>def_solid, StripedDefPosition_I=>def_checks,
+        StripedFwdPosition_I=>fwd_checks,
         Coin1_I=>coin_n, Start1_I=>start_button_n, GameSelect_I=>not ONE_PLAYER_MODE,
         ATTRACT_DBG=>attract, CREDIT_DBG=>credit, START_DBG=>start_pulse, SERVE_DBG=>serve,
 		CLOCK_14    => clk14,

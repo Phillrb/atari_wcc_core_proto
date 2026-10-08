@@ -126,15 +126,18 @@ set_location_assignment PIN_112 -to Start1_I
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to Coin1_I
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to Start1_I
 set_global_assignment -name VHDL_FILE JammaSwitchAdapter.vhd
-set_global_assignment -name VHDL_FILE SpinnerAdapter.vhd
+set_global_assignment -name VHDL_FILE SPIAdapter.vhd
 
-# Temporary Solid Forwards quadrature input test (user-selected pins).
-set_location_assignment PIN_42 -to SpinnerA_I
-set_location_assignment PIN_43 -to SpinnerB_I
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SpinnerA_I
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SpinnerB_I
-set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SpinnerA_I
-set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SpinnerB_I
+# ATtiny84 SPI controls. These replace the temporary quadrature inputs.
+set_location_assignment PIN_42 -to ControlsCSn_O
+set_location_assignment PIN_43 -to ControlsSCLK_O
+set_location_assignment PIN_44 -to ControlsMOSI_O
+set_location_assignment PIN_45 -to ControlsMISO_I
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ControlsCSn_O
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ControlsSCLK_O
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ControlsMOSI_O
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ControlsMISO_I
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to ControlsMISO_I
 
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to GameSelect_I

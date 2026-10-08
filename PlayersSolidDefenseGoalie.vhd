@@ -14,7 +14,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 entity PlayersSolidDefenseGoalie is
-    Generic (ATTRACT_POSITION : natural := 0); -- fixed analogue-model fallback
+    Generic (ATTRACT_POSITION : natural := 0; PLAY_INITIAL_GAP : natural := 85); -- fixed analogue-model fallback
     Port (
         HSYNC      : in  STD_LOGIC;
         VSYNCn     : in  STD_LOGIC;   -- H8 pin 13 (CLR1n), pin 10 (CLR2n): clear both FFs at vertical sync
@@ -32,10 +32,12 @@ end PlayersSolidDefenseGoalie;
 architecture Schematic of PlayersSolidDefenseGoalie is
     signal comparator_out : STD_LOGIC;
     -- 555 (N8) model: INITIAL_GAP (no draw) then 3 blocks of (SEGMENT_GAP + SEGMENT_LEN). Time adjust to lower group on screen.
-    constant INITIAL_GAP  : INTEGER := 85;   -- phases at start with N8_3 high (no draw) -> block higher on playfield
+    -- Adjustable digital RC/555 delay for paid-play control calibration.
+    -- Keep the original 85-line delay in attract (TM-035 Fig. 11 abstraction).
+    signal initial_gap : natural range 0 to 255 := 85;   -- phases at start with N8_3 high (no draw) -> block higher on playfield
     constant SEGMENT_GAP  : INTEGER := 18;   -- scanlines between segments (~1/3 playfield height between defensemen)
     constant SEGMENT_LEN  : INTEGER := 16;   -- count 0..15 per segment
-    constant PHASE_MAX    : INTEGER := INITIAL_GAP + 3 * (SEGMENT_GAP + SEGMENT_LEN) - 1;
+    signal phase_max : natural range 0 to 511 := 85 + 3 * (SEGMENT_GAP + SEGMENT_LEN) - 1;
     signal phase_count    : INTEGER range 0 to 511 := 0;
     signal N8_3           : STD_LOGIC;
     -- J8-2: invert N8_3 -> M7 LDn
@@ -57,6 +59,9 @@ architecture Schematic of PlayersSolidDefenseGoalie is
     signal slot_ok_xor   : STD_LOGIC;   -- goalie_segment xor GOALIE (for xnor)
     signal slot_ok_xnor  : STD_LOGIC;   -- goalie_segment xnor GOALIE: 1 = show this slot
 begin
+    assert PLAY_INITIAL_GAP <= 255 report "Defense delay out of range" severity failure;
+    initial_gap <= PLAY_INITIAL_GAP when ATRCn='1' else 85;
+    phase_max <= initial_gap + 3 * (SEGMENT_GAP + SEGMENT_LEN) - 1;
     -- Q7/CR7 disconnect the controls in attract; symbols still run.
     -- The fallback preserves the existing board positions, pending analogue calibration.
     comparator_out <= '1' when

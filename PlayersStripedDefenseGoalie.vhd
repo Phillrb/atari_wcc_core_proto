@@ -22,7 +22,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 entity PlayersStripedDefenseGoalie is
-    Generic (ATTRACT_POSITION : natural := 0); -- fixed analogue-model fallback
+    Generic (ATTRACT_POSITION : natural := 0; PLAY_INITIAL_GAP : natural := 83); -- fixed analogue-model fallback
     Port (
         HSYNC      : in  STD_LOGIC;
         VSYNCn     : in  STD_LOGIC;
@@ -50,10 +50,12 @@ architecture Schematic of PlayersStripedDefenseGoalie is
     --   SEGMENT_LEN = 29 (29 - 14 = 15 lines), SEGMENT_GAP = 5, INITIAL_GAP = 83 (83+5+15 = 103).
     -- Previous values were INITIAL_GAP=85, SEGMENT_GAP=6, SEGMENT_LEN=30, giving 16-line
     -- figures, 56-line gap, and 3-scanline vertical offset vs solid side.
-    constant INITIAL_GAP  : INTEGER := 83;
+    -- Adjustable digital RC/555 delay for paid-play control calibration.
+    -- Keep the original 83-line delay in attract (TM-035 Fig. 11 abstraction).
+    signal initial_gap : natural range 0 to 255 := 83;
     constant SEGMENT_GAP  : INTEGER := 5;
     constant SEGMENT_LEN  : INTEGER := 29;
-    constant PHASE_MAX    : INTEGER := INITIAL_GAP + 3 * (SEGMENT_GAP + SEGMENT_LEN) - 1;
+    signal phase_max : natural range 0 to 511 := 83 + 3 * (SEGMENT_GAP + SEGMENT_LEN) - 1;
     signal phase_count    : INTEGER range 0 to 511 := 0;
     signal H9_3           : STD_LOGIC;
     signal J8_12          : STD_LOGIC;   -- J8 pin 12 -> J7 pin 9 (LDn)
@@ -72,6 +74,9 @@ architecture Schematic of PlayersStripedDefenseGoalie is
     signal slot_ok_xor    : STD_LOGIC;   -- goalie_segment XOR GOALIE
     signal slot_ok_xnor   : STD_LOGIC;   -- NOT slot_ok_xor = goalie_segment XNOR GOALIE
 begin
+    assert PLAY_INITIAL_GAP <= 255 report "Defense delay out of range" severity failure;
+    initial_gap <= PLAY_INITIAL_GAP when ATRCn='1' else 83;
+    phase_max <= initial_gap + 3 * (SEGMENT_GAP + SEGMENT_LEN) - 1;
     -- Q7/CR7 disconnect the controls in attract; symbols still run.
     -- The fallback preserves the existing board positions, pending analogue calibration.
     comparator_out <= '1' when
