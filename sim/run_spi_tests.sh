@@ -17,3 +17,5 @@ analyze IC/IC9602.vhd
 for circuit in PlayersSolidForwards PlayersStripedForwards PlayersSolidDefenseGoalie PlayersStripedDefenseGoalie; do analyze "$circuit.vhd"; done
 analyze testbench/tb_SPIPlayerTravel.vhd
 ghdl -r --std=93 --workdir="$WORK" tb_SPIPlayerTravel --stop-time=300ms --assert-level=error
+analyze testbench/tb_SolidDefensePulse.vhd
+ghdl -r --std=93 --workdir="$WORK" tb_SolidDefensePulse --stop-time=50us --assert-level=error

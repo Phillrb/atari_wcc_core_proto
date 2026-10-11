@@ -7,7 +7,8 @@
 -- top defenseman (0,0), goalie (1,0), bottom defenseman (0,1). E6_Y1=0 for those, 1 for (1,1). Without this,
 -- vertical-window GOALIE (L6 pin 3) is constant per column so only 1 segment type would show per column.
 -- J6 (LS27) gate 3: NOR(K6-8, E6 out, L8-8) -> J6-8 = E1.
--- 555 modelled as counter: when comparator high, N8_3 = high for 1 HSYNC then low for 16, repeat 3x.
+-- N8 analogue approximation: scanline phase counter with a registered pulse
+-- output, initial delay, then three 18-line high / 16-line low intervals.
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -39,7 +40,7 @@ architecture Schematic of PlayersSolidDefenseGoalie is
     constant SEGMENT_LEN  : INTEGER := 16;   -- count 0..15 per segment
     signal phase_max : natural range 0 to 511 := 85 + 3 * (SEGMENT_GAP + SEGMENT_LEN) - 1;
     signal phase_count    : INTEGER range 0 to 511 := 0;
-    signal N8_3           : STD_LOGIC;
+    signal N8_3           : STD_LOGIC := '0';
     -- J8-2: invert N8_3 -> M7 LDn
     signal J8_2_out       : STD_LOGIC;
     -- M7 (IC9316)
@@ -72,23 +73,32 @@ begin
     -- VSYNCn='0' resets the counter each frame; needed because POSITION=0 means comparator is always '1'
     -- (ramp >= 0 is always true), so the comparator-low path never fires and without VSYNCn the counter
     -- would free-run across frame boundaries, drifting the player position by ~127 lines per frame.
+    -- Register the analogue-model pulse output. The old combinational modulo
+    -- decoder could glitch as phase/ramp bits settled after HSYNC, directly
+    -- driving M7 LDn and the symbol gate. Decode the next phase so the settled
+    -- scanline timing is retained, without exposing arithmetic transients.
     process(HSYNC)
+        variable next_phase : integer range 0 to 511;
     begin
         if rising_edge(HSYNC) then
             if VSYNCn = '0' or comparator_out = '0' then
-                phase_count <= 0;
+                next_phase := 0;
             elsif phase_count < PHASE_MAX then
-                phase_count <= phase_count + 1;
+                next_phase := phase_count + 1;
             else
-                phase_count <= 0;
+                next_phase := 0;
+            end if;
+            phase_count <= next_phase;
+            if comparator_out = '1' and (
+                next_phase < initial_gap or
+                (next_phase - initial_gap) mod (SEGMENT_GAP + SEGMENT_LEN) < SEGMENT_GAP
+            ) then
+                N8_3 <= '1';
+            else
+                N8_3 <= '0';
             end if;
         end if;
     end process;
-    -- N8_3 high = load (no draw): initial gap, or gap within each of the 3 blocks
-    N8_3 <= '1' when (comparator_out = '1' and (
-        phase_count < INITIAL_GAP or
-        (phase_count - INITIAL_GAP) mod (SEGMENT_GAP + SEGMENT_LEN) < SEGMENT_GAP
-    )) else '0';
 
     -- J8-2 (LS04): invert N8_3
     U_J8_2: entity work.LS04
