@@ -116,10 +116,6 @@ signal start_n_i        : STD_LOGIC;    -- inverted START (active low)
 signal hole_i           : STD_LOGIC;
 
 signal sound_goal_i, sound_goaln_i, score_sound_n_i : STD_LOGIC;
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
 signal miss_armed       : STD_LOGIC := '1';
 signal miss_prev        : STD_LOGIC := '0';
 signal miss_one_shot    : STD_LOGIC := '0';
