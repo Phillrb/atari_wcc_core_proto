@@ -23,6 +23,8 @@ entity atari_wcc is
         Coin1_I : in STD_LOGIC := '1'; -- normally open to GND
         Start1_I : in STD_LOGIC := '1';
         GameSelect_I : in STD_LOGIC := '1'; -- active low: 1 player; high: 2 players
+		KickChecks_I : in STD_LOGIC := '1';
+		KickSolids_I : in STD_LOGIC := '1';
         ATTRACT_DBG : out STD_LOGIC;
         CREDIT_DBG : out STD_LOGIC;
         START_DBG : out STD_LOGIC;
@@ -74,6 +76,7 @@ signal paddles_i      : STD_LOGIC;
 signal hit_i          : STD_LOGIC;
 signal atrcn_i, atrc_i : STD_LOGIC; -- ATRCn HIGH in play, ATRC HIGH in attract
 signal coin_pressed, start_pressed, credit_i, coin_accepted_i, credit_expired_i, latch_presetn_i : STD_LOGIC;
+signal solid_kick_pressed, check_kick_pressed : STD_LOGIC;
 signal solid_fwd_e2, solid_fwd_b2, solid_fwd_c2, solid_fwd_d2 : STD_LOGIC;
 signal solid_def_e1, solid_def_b1, solid_def_c1, solid_def_d1 : STD_LOGIC;
 signal striped_fwd_e3, striped_fwd_b3, striped_fwd_c3, striped_fwd_d3 : STD_LOGIC;
@@ -113,7 +116,10 @@ signal start_n_i        : STD_LOGIC;    -- inverted START (active low)
 signal hole_i           : STD_LOGIC;
 
 signal sound_goal_i, sound_goaln_i, score_sound_n_i : STD_LOGIC;
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 signal miss_armed       : STD_LOGIC := '1';
 signal miss_prev        : STD_LOGIC := '0';
 signal miss_one_shot    : STD_LOGIC := '0';
@@ -432,6 +438,15 @@ U_WINDOW_MISS_BOUNCE: entity work.WindowMissBounce
 		MISS       => miss_i
 	);
 
+-- Figure 13 plus the explicit JAMMA/contact-latch adaptation boundary.
+U_SOLID_KICK_INPUT: entity work.JammaSwitchAdapter
+    generic map(STABLE_CLOCKS=>INPUT_STABLE_CLOCKS)
+    port map(clk7, KickSolids_I, solid_kick_pressed);
+
+U_CHECKS_KICK_INPUT: entity work.JammaSwitchAdapter
+    generic map(STABLE_CLOCKS=>INPUT_STABLE_CLOCKS)
+    port map(clk7, KickChecks_I, check_kick_pressed);
+
 -- Catch/Kick/Horizontal Direction
 U_CATCH_KICK: entity work.CatchKickHorizontalDirection
 	port map(
@@ -447,8 +462,8 @@ U_CATCH_KICK: entity work.CatchKickHorizontalDirection
 		VSYNCn        => vsyncn_i,
 		VRESET        => vreset_i,
 		STOP          => stop_i,
-		SOLID_KICK    => '0',
-		CHECKED_KICK  => '0',
+		SOLID_KICK    => solid_kick_pressed,
+		CHECKED_KICK  => check_kick_pressed,
 		CATCH_TRIGGER => catch_trigger_i,
 		CATCH_CLRn    => catch_clrn_i,
 		HORIZ_DIR_Qn  => horiz_dir_qn_i
