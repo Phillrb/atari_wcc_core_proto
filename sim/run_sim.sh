@@ -89,6 +89,9 @@ ghdl -a --std=93 "$ROOT/StartCircuit.vhd"
 ghdl -a --std=93 "$ROOT/GameSelectCircuit.vhd"
 ghdl -a --std=93 "$ROOT/atari_wcc.vhd"
 
+# Figure 21 BCD rollover, carries and captured score video.
+bash "$ROOT/sim/run_score_tests.sh"
+
 # Focused runtime selector checks before the full video capture.
 ghdl -a --std=93 "$ROOT/testbench/tb_GameSelect.vhd"
 ghdl -r --std=93 tb_GameSelect --stop-time=1us --assert-level=error

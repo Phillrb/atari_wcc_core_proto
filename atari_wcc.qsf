@@ -149,3 +149,13 @@ set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to KickChecks_I
 
 
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+
+# Figure 21 LS90 /5 stages must share a low-skew clock route.
+# Q0 also feeds the video mux; explicitly promote every CLOCK sink, including
+# FF_D, which automatic promotion previously left on local routing.
+set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -from "atari_wcc:U_CORE|ScoreCircuit:U_SCORE|LS90:ic_K3|JK_flip_flop:FF_A|nxt_state" -to "atari_wcc:U_CORE|ScoreCircuit:U_SCORE|LS90:ic_K3|JK_flip_flop:FF_B|nxt_state"
+set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -from "atari_wcc:U_CORE|ScoreCircuit:U_SCORE|LS90:ic_K3|JK_flip_flop:FF_A|nxt_state" -to "atari_wcc:U_CORE|ScoreCircuit:U_SCORE|LS90:ic_K3|JK_flip_flop:FF_C|nxt_state"
+set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -from "atari_wcc:U_CORE|ScoreCircuit:U_SCORE|LS90:ic_K3|JK_flip_flop:FF_A|nxt_state" -to "atari_wcc:U_CORE|ScoreCircuit:U_SCORE|LS90:ic_K3|JK_flip_flop:FF_D|nxt_state"
+set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -from "atari_wcc:U_CORE|ScoreCircuit:U_SCORE|LS90:ic_L3|JK_flip_flop:FF_A|nxt_state" -to "atari_wcc:U_CORE|ScoreCircuit:U_SCORE|LS90:ic_L3|JK_flip_flop:FF_B|nxt_state"
+set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -from "atari_wcc:U_CORE|ScoreCircuit:U_SCORE|LS90:ic_L3|JK_flip_flop:FF_A|nxt_state" -to "atari_wcc:U_CORE|ScoreCircuit:U_SCORE|LS90:ic_L3|JK_flip_flop:FF_C|nxt_state"
+set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -from "atari_wcc:U_CORE|ScoreCircuit:U_SCORE|LS90:ic_L3|JK_flip_flop:FF_A|nxt_state" -to "atari_wcc:U_CORE|ScoreCircuit:U_SCORE|LS90:ic_L3|JK_flip_flop:FF_D|nxt_state"

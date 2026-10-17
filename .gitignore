@@ -55,3 +55,8 @@ sim/vertical_ball_bounce.gif
 sim/spi_frame_*.png
 sim/spi_limits.png
 sim/spi_controls.gif
+
+# Figure 21 score rollover regression captures
+sim/score_[0-9]*.png
+sim/score_rollover.png
+sim/score_rollover.gif
