@@ -3,8 +3,11 @@
 On 17 October 2026 the reported solids score jump from 9 to 12 was reproduced
 with the saved 13 October fitted board netlist and its slow-corner SDF delays.
 The same stimulus passes with the corrected fit at both timing corners.
-No game or IC VHDL was changed. The separate checks-goal detection issue is
-outside this change.
+No game or IC VHDL was changed. The separately reported checks-goal detection
+issue was outside the scope of this timing correction.
+
+On 18 October 2026, the project owner confirmed that goal counting now works
+properly after testing on the FPGA.
 
 ## Cause and correction
 
@@ -104,12 +107,16 @@ extracted under `/tmp/wcc-modelsim-libs/runtime`, with both its
 no system packages or installed tool files were modified. The legacy
 simulator must run outside the execution sandbox on this host.
 
-## Remaining board check
+## Board verification
 
-Load `output_files/atari_wcc.sof`, start a fresh game and verify consecutive
-solids goals display 8, 9, 10, 11, 12. Verify a new game resets the score.
-The bitstream was generated but has not been programmed or tested on the
-physical board in this session. SHA-256 of the verified build:
+Goal counting was confirmed working on physical FPGA hardware by the project
+owner on 18 October 2026. The report did not specify individual score sequences,
+new-game reset coverage or the programmed bitstream hash; those details are
+not inferred from the confirmation.
+
+For future board regressions, start a fresh game and check consecutive solids
+goals display 8, 9, 10, 11, 12, then verify a new game resets the score.
+SHA-256 of the build used for the fitted verification above:
 
 ```text
 03615909332308a6a1b4f832aef503eda70eb12290c810c57a7d9e8c59ac6dda
@@ -117,5 +124,6 @@ physical board in this session. SHA-256 of the verified build:
 
 This is score-path timing closure, not whole-design timing closure. The final
 build still reports 29 other unconstrained clocks and existing CLOCK_7
-hold/removal failures (slow hold -22.484 ns, removal -15.993 ns). Those and
-the checks-scoring gameplay issue remain separate work.
+hold/removal failures (slow hold -22.484 ns, removal -15.993 ns). Those remain
+separate work. The earlier checks-goal detection report was not independently
+retested by the fitted regressions, which inject goal pulses directly.

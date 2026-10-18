@@ -2,8 +2,9 @@
 
 This project is a VHDL recreation of the classic 1974 discrete logic arcade game known as 'World Cup', 'World Cup Football', 'Coupe du Monde' or 'Goal IV' by Atari. The original PCB is marked 'WCC' and was assigned the working ID 'TM-035'.
 
-> **Status: Running in simulation and on FPGA hardware; video output tested successfully. Sound implemented and simulation-tested.**
+> **Status: Running in simulation and on FPGA hardware; video output and goal counting tested successfully. Sound implemented and simulation-tested.**
 > Quartus synthesis and fitting have passed for the Cyclone II EP2C5T144C8 board. The project owner confirmed on 24 September 2026 that the hardware video output looks good. GHDL simulation and the Python visualizer remain available for development. Full game integration is still in progress; this hardware check validates the displayed output, not every gameplay function.
+> On 18 October 2026, the project owner confirmed that goal counting now works properly on the FPGA following the score rollover correction. See [score timing and verification](docs/SCORE_ROLLOVER_TIMING.md).
 
 ## Current Implementation Status
 
@@ -14,7 +15,7 @@ This project is a VHDL recreation of the classic 1974 discrete logic arcade game
 | Phase 2 | Game control: electronic latch, credit, start, game select, time line, serve timing | Coin/start, attract, two-minute timer and serve integrated and simulation-tested; runtime one-/two-player selection (board defaults to two-player); analogue models remain |
 | Phase 3 | Ball system: motion, direction & speed, catch/kick, window/miss/bounce | **Done** |
 | Phase 4 | Players: all forwards, defense/goalie (solid + striped), ramp, mux, summing | **Done** |
-| Phase 5 | Score circuit, sound circuit, moving hole | Score circuit implemented and integrated; sound (Fig 20) implemented, integrated and simulation-tested; **moving hole (Fig 18) incomplete: opening renders but drifts upward and wraps instead of reversing** (see [notes](docs/MOVING_HOLE_FIG18.md)) |
+| Phase 5 | Score circuit, sound circuit, moving hole | Score circuit implemented and integrated; **goal counting FPGA-tested and confirmed working on 18 October 2026** (see [verification](docs/SCORE_ROLLOVER_TIMING.md)); sound (Fig 20) implemented, integrated and simulation-tested; **moving hole (Fig 18) incomplete: opening renders but drifts upward and wraps instead of reversing** (see [notes](docs/MOVING_HOLE_FIG18.md)) |
 | Phase 6 | Video output and board integration | Board wrapper, PLL and composite output integrated; synthesis/fitting passed and hardware video tested. Original Fig 22 resistor network recreation remains outstanding |
 
 See [AGENTS.md](AGENTS.md) for the full circuit-by-circuit breakdown.

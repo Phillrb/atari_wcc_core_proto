@@ -107,7 +107,7 @@ All players wired in atari_wcc.vhd and visible in simulation.
 | 5.1 | **Hit Circuit** – Fig 17 (K6 LS08); simple AND. |
 | 5.2 | **Moving Hole** – Fig 18 implemented and tested; F3, M1, J1, E3, K1, H1, L4, M4. Confirmed 9/11 presets do not reverse on the 313-line raster; see [verification notes](MOVING_HOLE_FIG18.md). |
 | 5.3 | **Window/Miss/Bounce** – Fig 19 (done as part of Phase 3.5). |
-| 5.4 | **Score Circuit** – Fig 21 (M2 LS48, M3/N3 LS153, K3 LS90, N2 LS107, J3/H2/K2/L2 LS00, J2 LS04, D3 LS08, L1 LS27, H3/N4/F3). LS48 already in 74LS. |
+| 5.4 | **Score Circuit — IMPLEMENTED AND INTEGRATED** – Fig 21, `ScoreCircuit.vhd`. RTL and fitted timing regressions pass following the Q0 clock-routing correction. Project owner confirmed goal counting works properly on FPGA on 18 October 2026. See [score timing and verification](SCORE_ROLLOVER_TIMING.md). |
 | 5.5 | **Sound Circuit** – Fig 20 (J9, M9, E5 IC9602, L8 LS00, E7 LS27). |
 
 Order: 5.1–5.3 support game behaviour; 5.4–5.5 can follow or run in parallel once blocks are ready.
@@ -128,7 +128,7 @@ Order: 5.1–5.3 support game behaviour; 5.4–5.5 can follow or run in parallel
 2. ~~**Ball system**~~ – **DONE** (Phase 3).
 3. ~~**Players**~~ – **DONE** (Phase 4).
 4. **Game control** – Review Phase 2 circuits (Electronic Latch, Credit, Start, Time Line, Serve Timing). Wire into top-level and verify behaviour.
-5. **Hit, Moving Hole, Score, Sound** – Phase 5.
+5. **Hit, Moving Hole, Score, Sound** – Phase 5; score circuit integrated and goal counting confirmed on FPGA (18 October 2026).
 6. **Video summing and top-level integration** – Phase 6.
 7. **Board build** – PLL + atari_wcc_board + MaSTer video/pinout.
 
