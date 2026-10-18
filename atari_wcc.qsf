@@ -159,3 +159,11 @@ set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -from "atari_wcc:U_CO
 set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -from "atari_wcc:U_CORE|ScoreCircuit:U_SCORE|LS90:ic_L3|JK_flip_flop:FF_A|nxt_state" -to "atari_wcc:U_CORE|ScoreCircuit:U_SCORE|LS90:ic_L3|JK_flip_flop:FF_B|nxt_state"
 set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -from "atari_wcc:U_CORE|ScoreCircuit:U_SCORE|LS90:ic_L3|JK_flip_flop:FF_A|nxt_state" -to "atari_wcc:U_CORE|ScoreCircuit:U_SCORE|LS90:ic_L3|JK_flip_flop:FF_C|nxt_state"
 set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -from "atari_wcc:U_CORE|ScoreCircuit:U_SCORE|LS90:ic_L3|JK_flip_flop:FF_A|nxt_state" -to "atari_wcc:U_CORE|ScoreCircuit:U_SCORE|LS90:ic_L3|JK_flip_flop:FF_D|nxt_state"
+
+# Figure 16 B4/C4 and the Figure 4 HRESET source must share CLOCK_7 routing.
+# Automatic promotion split B4 bits between local/global routes (~21 ns skew).
+# D2 drives HBLANK through C3 and must not change B4's enable before its edge.
+set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -from "atari_wcc:U_CORE|ComputerClock:U_CLOCK|LS74:E2|D_flip_flop:DFF2|JK_flip_flop:JKFF|nxt_state" -to "atari_wcc:U_CORE|BallMotionCircuit:U_BALL_MOTION|IC9316:B4|count*"
+set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -from "atari_wcc:U_CORE|ComputerClock:U_CLOCK|LS74:E2|D_flip_flop:DFF2|JK_flip_flop:JKFF|nxt_state" -to "atari_wcc:U_CORE|BallMotionCircuit:U_BALL_MOTION|IC9316:C4|count*"
+set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -from "atari_wcc:U_CORE|ComputerClock:U_CLOCK|LS74:E2|D_flip_flop:DFF2|JK_flip_flop:JKFF|nxt_state" -to "atari_wcc:U_CORE|HorizontalSync:U_HSYNC|LS74:D2|D_flip_flop:DFF1|JK_flip_flop:JKFF|nxt_state"
+
