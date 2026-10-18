@@ -60,3 +60,8 @@ sim/spi_controls.gif
 sim/score_[0-9]*.png
 sim/score_rollover.png
 sim/score_rollover.gif
+
+# Horizontal STOP/catch diagnostics
+sim/horizontal_stop*.csv
+sim/horizontal_stop.png
+sim/horizontal_stop.gif
