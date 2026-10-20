@@ -6,8 +6,12 @@
 --   B6 counter increments on each goalie/forward hit (clock from F6 NAND gate 3)
 --   B6 QC/QD form speed code, gated by A6 AND gates (enabled during VRESET only)
 --   A5 XOR gates conditionally invert speed code based on horizontal direction
---   B5 adder sums XOR outputs + fixed 1010 + direction -> HSPEED motion code
---   When STOPn low or outside VRESET: A6 outputs all zero -> adder produces stop code (1010)
+--   B5 adder sums XOR outputs + fixed 1001 + direction -> HSPEED motion code
+--   When STOPn low or outside VRESET: A6 outputs all zero -> adder produces stop code (1001)
+--
+-- Approved 375-clock raster adaptation (2026-10-18): B5 A1=1, A2=0.
+-- Original Figure 15 straps encode 10; code 9 gives a 375-clock ball period
+-- and holds a caught ball stationary. See docs/CATCH_STOP_DIAGNOSIS.md.
 --
 -- Shared ICs (each circuit instantiates its own copy with unused gates tied off):
 --   F6 (LS00): gate 3 here, gate 4 in Fig 14
@@ -162,10 +166,10 @@ begin
         );
 
     -- B5 (LS83): 4-bit adder - generates HSPEED motion code
-    -- A side: fixed 1010 (A1=0, A2=1, A3=0, A4=1)
+    -- A side: fixed 1001 (A1=1, A2=0, A3=0, A4=1)
     -- B side: B1=XOR(QD,dir), B2=XOR(QC,dir), B3=XOR(NOT_QC,dir), B4=dir
     -- CIN = direction (A6_3)
-    -- Stop code (all B=0, CIN=0): 0000 + 1010 + 0 = 1010
+    -- Stop code (all B=0, CIN=0): 0000 + 1001 + 0 = 1001
     B5: entity work.LS83
         port map(
             P1_A4   => '1',       -- A4 = 1 (fixed)
@@ -174,9 +178,9 @@ begin
             P4_B3   => A5_8,      -- B3 from XOR gate 3 (NOT_QC ^ dir)
             P6_S2   => B5_S2,     -- S2 = Hb
             P7_B2   => A5_11,     -- B2 from XOR gate 4 (QC ^ dir)
-            P8_A2   => '1',       -- A2 = 1 (fixed)
+            P8_A2   => '0',       -- A2 = 0 (375-clock raster adaptation)
             P9_S1   => B5_S1,     -- S1 = Ha
-            P10_A1  => '0',       -- A1 = 0 (fixed)
+            P10_A1  => '1',       -- A1 = 1 (375-clock raster adaptation)
             P11_B1  => A5_3,      -- B1 from XOR gate 1 (QD ^ dir)
             P13_CIN => A6_3,      -- CIN = direction
             P14_COUT=> open,      -- carry out not used

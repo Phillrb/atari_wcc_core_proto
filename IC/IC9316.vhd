@@ -35,6 +35,9 @@ use IEEE.NUMERIC_STD.ALL;
 -- P16_VCC  : VCC (not implemented)
 
 entity IC9316 is
+    -- Same pin truth table; optionally store the terminal-count decode so
+    -- FPGA output skew cannot create a carry-clock pulse at 7 -> 8.
+    generic (REGISTERED_CARRY : boolean := false);
     Port (
         P1_CLRn  : in  STD_LOGIC;      -- Pin 1: Clear (active low)
         P2_CLK   : in  STD_LOGIC;      -- Pin 2: Clock
@@ -59,6 +62,7 @@ architecture Behavioral of IC9316 is
     -- 74LS161-style: single count register, async clear, sync load, sync count
     signal count : STD_LOGIC_VECTOR(3 downto 0) := "0000";
     signal D     : STD_LOGIC_VECTOR(3 downto 0);  -- parallel load: D(0)=A(LSB), D(3)=D(MSB)
+    signal terminal : STD_LOGIC := '0';
 begin
     D <= P6_D & P5_C & P4_B & P3_A;
 
@@ -81,6 +85,29 @@ begin
     P11_QD <= count(3);
 
     -- RCO high when count is 15 (1111) and ENT (CET) is enabled
-    P15_RC <= '1' when (count = "1111" and P10_CET = '1') else '0';
+    decoded_carry: if not REGISTERED_CARRY generate
+        P15_RC <= '1' when (count = "1111" and P10_CET = '1') else '0';
+    end generate;
 
-end Behavioral; 
+    stored_carry: if REGISTERED_CARRY generate
+        -- Decode the NEXT count before the clock, including load priority and
+        -- both enables. This is not a one-cycle-delayed decode of count.
+        process(P2_CLK, P1_CLRn)
+        begin
+            if P1_CLRn = '0' then
+                terminal <= '0';
+            elsif rising_edge(P2_CLK) then
+                if P9_LDn = '0' then
+                    if D = "1111" then terminal <= '1';
+                    else terminal <= '0'; end if;
+                elsif P7_CEP = '1' and P10_CET = '1' then
+                    if count = "1110" then terminal <= '1';
+                    else terminal <= '0'; end if;
+                end if;
+            end if;
+        end process;
+        -- CET still gates carry asynchronously, independently of CEP.
+        P15_RC <= terminal and P10_CET;
+    end generate;
+
+end Behavioral;

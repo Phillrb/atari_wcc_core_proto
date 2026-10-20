@@ -14,7 +14,10 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
 entity CatchKickHorizontalDirection is
+    generic (SAMPLE_COLLISIONS : boolean := false);
     Port (
+        SAMPLE_CLK    : in STD_LOGIC := '0'; -- FPGA adapter clock
+        HIT_SAMPLED   : in STD_LOGIC := '0'; -- same sample as qualified gates
         BALL          : in  STD_LOGIC;  -- E8 pin 9 (gate 3 input)
         BLIP          : in  STD_LOGIC;  -- E8 pin 10 (gate 3 input)
         HIT           : in  STD_LOGIC;  -- C8 gates, D5 pin 3 (CLK1)
@@ -37,6 +40,8 @@ end CatchKickHorizontalDirection;
 
 architecture Structural of CatchKickHorizontalDirection is
     -- E8 (LS00) internal signals
+    signal e8_8_raw, c8_3_raw, c8_6_raw, c8_11_raw, hit_clock : STD_LOGIC;
+    signal sample_d, sample_q : STD_LOGIC_VECTOR(3 downto 0);
     signal e8_8  : STD_LOGIC;  -- gate 3 output: NAND(BALL, BLIP) = HIT EXTENDER
     signal e8_3  : STD_LOGIC;  -- gate 1 output: NAND(ONE_PLAYER, WINDOWS)
     signal e8_11 : STD_LOGIC;  -- gate 4 output: NAND(e8_3, H256n) = HORIZ DIR
@@ -68,6 +73,22 @@ architecture Structural of CatchKickHorizontalDirection is
     signal k8_4 : STD_LOGIC;   -- gate 2 output: NOR(c9_4, c9_1)
 
 begin
+    -- Only the FPGA integration enables this boundary. Qualify before sampling:
+    -- sampling HIT and DEFENSEMENn separately could recreate a catch glitch.
+    sample_d <= c8_11_raw & c8_6_raw & c8_3_raw & e8_8_raw;
+    filtered: if SAMPLE_COLLISIONS generate
+        U_SAMPLE: entity work.CollisionSampleBank generic map(WIDTH=>4)
+            port map(SAMPLE_CLK=>SAMPLE_CLK, D=>sample_d, Q=>sample_q);
+        hit_clock <= HIT_SAMPLED;
+    end generate;
+    original: if not SAMPLE_COLLISIONS generate
+        sample_q <= sample_d;
+        hit_clock <= HIT;
+    end generate;
+    e8_8 <= sample_q(0);
+    c8_3 <= sample_q(1);
+    c8_6 <= sample_q(2);
+    c8_11 <= sample_q(3);
 
     -- E8 (LS00): quad 2-input NAND
     -- Gate 3 (9,10->8): NAND(BALL, BLIP) = HIT EXTENDER -> D8 SET2n
@@ -78,7 +99,7 @@ begin
         port map(
             P1_A1  => ONE_PLAYER,  P2_B1  => WINDOWS,  P3_Y1  => e8_3,
             P4_A2  => '1',         P5_B2  => '1',      P6_Y2  => open,   -- gate 2 unused
-            P9_A3  => BALL,        P10_B3 => BLIP,     P8_Y3  => e8_8,
+            P9_A3  => BALL,        P10_B3 => BLIP,     P8_Y3  => e8_8_raw,
             P12_A4 => e8_3,        P13_B4 => H256n,    P11_Y4 => e8_11
         );
 
@@ -89,10 +110,10 @@ begin
     -- Gate 3: unused
     U_C8: entity work.LS00
         port map(
-            P1_A1  => TEAM,        P2_B1  => HIT,      P3_Y1  => c8_3,
-            P4_A2  => HIT,         P5_B2  => DEFENSEMENn, P6_Y2 => c8_6,
+            P1_A1  => TEAM,        P2_B1  => HIT,      P3_Y1  => c8_3_raw,
+            P4_A2  => HIT,         P5_B2  => DEFENSEMENn, P6_Y2 => c8_6_raw,
             P9_A3  => '1',         P10_B3 => '1',      P8_Y3  => open,   -- gate 3 unused
-            P12_A4 => a8_6_teamn,  P13_B4 => HIT,      P11_Y4 => c8_11
+            P12_A4 => a8_6_teamn,  P13_B4 => HIT,      P11_Y4 => c8_11_raw
         );
 
     -- D8 (LS74): dual D flip-flop
@@ -130,7 +151,7 @@ begin
             -- FF1 (ball-off-paddle)
             P1_CLR1n  => VSYNCn,    -- cleared each frame
             P2_D1     => '1',       -- always latches HIGH on HIT
-            P3_CLK1   => HIT,       -- clocked by hit
+            P3_CLK1   => hit_clock,       -- clocked by hit
             P4_SET1n  => STOP,      -- set by STOP (from J5 ch1)
             P5_Q1     => d5_q1,     -- -> FF2 D2
             P6_Q1n    => open,

@@ -1,5 +1,22 @@
 # Catch and horizontal STOP investigation
 
+## Approved correction — 18 October 2026
+
+The project owner approved adapting B5 to the measured raster. In
+`HorizontalDirectionAndSpeed.vhd`, B5 pin 10 (A1) is now high and pin 8 (A2)
+is low, changing the fixed adder input from 10 to 9. All logic remains in the
+existing LS83 instance. The raster, counter wiring and catch logic are unchanged.
+This is an explicit schematic adaptation, analogous to the vertical adaptation.
+
+The isolated fixed-preset diagnostic was rerun before this change and again
+measured drifting positions with 10 and stable positions with 9. That experiment
+establishes the period correction, but does not validate complete catching.
+At the owner's request, the production change is now awaiting their manual
+build; further simulation and catch regressions are deferred until needed.
+The remaining BLIP/collision concerns below have not been changed or resolved.
+
+The following sections record the investigation **before this correction**.
+
 TM-035 says goalies and forwards catch in both paid play and attract mode.
 Defensemen only bounce. A catch ends on the appropriate kick button, when the
 player leaves the ball, or after the nominal three-second timeout. See the

@@ -3,6 +3,21 @@ create_clock -name Clk_50_I -period 20.000 [get_ports {Clk_50_I}]
 derive_pll_clocks
 # TM-035 Fig. 3: LS04 inverter then LS74 divide-by-two.
 create_generated_clock -name CLOCK_7 -source [get_pins {PLL|altpll_component|pll|clk[0]}] -edges {2 4 6} [get_registers {U_CORE|U_CLOCK|E2|DFF2|JKFF|nxt_state}]
+# Collision adapter samples halfway through CLOCK_7 low. CLOCK_7 is produced
+# at CLOCK_14 falling edges; the gated CLOCK_14 rising edge is 1/4 pixel later.
+set sample_shift [expr {[get_clock_info -period [get_clocks CLOCK_7]] / 4.0}]
+create_generated_clock -name COLLISION_SAMPLE -source [get_registers {U_CORE|U_CLOCK|E2|DFF2|JKFF|nxt_state}] -edges {2 3 4} -edge_shift [list $sample_shift 0 $sample_shift] [get_pins {U_CORE|U_COLLISION_CLOCK|P3_Y1|combout}]
+# Figure 16 local synchronous A4/D4 domain: HSYNC is high for 32 of 455
+# pixels; its falling edge clocks both counters through the HSYNCn inverter.
+# Model at the registered source to check carry/load setup and hold. This
+# does not constrain the upstream ripple raster.
+set pixel_period [get_clock_info -period [get_clocks CLOCK_7]]
+create_clock -name BALL_HSYNC -period [expr {455 * $pixel_period}] -waveform [list 0 [expr {32 * $pixel_period}]] [get_registers {U_CORE|U_HSYNC|E2|DFF1|JKFF|nxt_state}]
+# A4 terminal clocks B3 on its falling edge. Both edges originate at HSYNC
+# falling edges. Use a conservative one-line high / one-line low envelope:
+# presets shorten the nominal divide-by-16 cycle, but never below this bound.
+# This checks the same-edge D4 -> B3 hold race as well as B3 -> preset feedback.
+create_generated_clock -name BALL_A4_CARRY -source [get_registers {U_CORE|U_HSYNC|E2|DFF1|JKFF|nxt_state}] -edges {2 4 6} [get_registers {U_CORE|U_BALL_MOTION|A4|terminal}]
 # Figure 21 score clocks. J3 emits an active-low, one-CLOCK_7 goal pulse.
 # These are EVENT clocks, not free-running dividers of the raster: model a
 # conservative 140 ns high / 140 ns low envelope (one event every two pixels).

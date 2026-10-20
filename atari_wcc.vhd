@@ -74,6 +74,10 @@ signal defensemen_n_i : STD_LOGIC;
 signal symbol_i       : STD_LOGIC;
 signal paddles_i      : STD_LOGIC;
 signal hit_i          : STD_LOGIC;
+signal hit_raw_i, h_bounce_raw_i, v_bounce_raw_i, bounce_n_raw_i, miss_raw_i : STD_LOGIC;
+signal clk7_n_sample, collision_clk : STD_LOGIC;
+signal collision_d, collision_q : STD_LOGIC_VECTOR(7 downto 0);
+signal pp2_next, pp3_next, pp4_next : STD_LOGIC;
 signal atrcn_i, atrc_i : STD_LOGIC; -- ATRCn HIGH in play, ATRC HIGH in attract
 signal coin_pressed, start_pressed, credit_i, coin_accepted_i, credit_expired_i, latch_presetn_i : STD_LOGIC;
 signal solid_kick_pressed, check_kick_pressed : STD_LOGIC;
@@ -263,7 +267,7 @@ U_PLAYERS_SUM: entity work.PlayersSumming
 		SYMBOL      => symbol_i,
 		BALL        => ball_i,
 		PADDLES     => paddles_i,
-		HIT         => hit_i
+		HIT         => hit_raw_i
 	);
 
 -- Players ramp generator
@@ -428,11 +432,42 @@ U_WINDOW_MISS_BOUNCE: entity work.WindowMissBounce
 		C_PLUS_Dn  => c_plus_d_n_i,
 		WINDOWS    => windows_i,
 		WINDOWSn   => open,
-		V_BOUNCE   => v_bounce_i,
-		H_BOUNCE   => h_bounce_i,
-		BOUNCEn    => bounce_n_i,
-		MISS       => miss_i
+		V_BOUNCE   => v_bounce_raw_i,
+		H_BOUNCE   => h_bounce_raw_i,
+		BOUNCEn    => bounce_n_raw_i,
+		MISS       => miss_raw_i
 	);
+
+-- Approved FPGA collision boundary: CLOCK_7 changes at CLOCK_14 falling
+-- edges. Sample halfway through its low phase, after the raster ripple settles.
+U_COLLISION_INVERT: entity work.LS04
+    port map(P1_A1=>clk7, P2_Y1=>clk7_n_sample,
+        P3_A2=>'0', P4_Y2=>open, P5_A3=>'0', P6_Y3=>open,
+        P9_A4=>'0', P8_Y4=>open, P11_A5=>'0', P10_Y5=>open,
+        P13_A6=>'0', P12_Y6=>open);
+U_COLLISION_CLOCK: entity work.LS08
+    port map(P1_A1=>CLOCK_14, P2_B1=>clk7_n_sample, P3_Y1=>collision_clk,
+        P4_A2=>'0', P5_B2=>'0', P6_Y2=>open,
+        P9_A3=>'0', P10_B3=>'0', P8_Y3=>open,
+        P12_A4=>'0', P13_B4=>'0', P11_Y4=>open);
+-- Hold player segment data when there is no hit. D7's transparent latch then
+-- closes on HIT without its data changing to the next raster/player segment.
+U_COLLISION_PP23: entity work.LS153
+    port map(P1_Ea=>'0', P2_S1=>'0', P14_S0=>hit_raw_i,
+        P6_1I0=>collision_q(5), P5_1I1=>pp2_i, P4_1I2=>'0', P3_1I3=>'0', P7_1Y=>pp2_next,
+        P10_2I0=>collision_q(6), P11_2I1=>pp3_i, P12_2I2=>'0', P13_2I3=>'0', P9_2Y=>pp3_next, P15_Eb=>'0');
+U_COLLISION_PP4: entity work.LS153
+    port map(P1_Ea=>'0', P2_S1=>'0', P14_S0=>hit_raw_i,
+        P6_1I0=>collision_q(7), P5_1I1=>pp4_i, P4_1I2=>'0', P3_1I3=>'0', P7_1Y=>pp4_next,
+        P10_2I0=>'0', P11_2I1=>'0', P12_2I2=>'0', P13_2I3=>'0', P9_2Y=>open, P15_Eb=>'1');
+collision_d <= pp4_next & pp3_next & pp2_next & miss_raw_i & bounce_n_raw_i & v_bounce_raw_i & h_bounce_raw_i & hit_raw_i;
+U_COLLISION_EVENTS: entity work.CollisionSampleBank
+    port map(SAMPLE_CLK=>collision_clk, D=>collision_d, Q=>collision_q);
+hit_i <= collision_q(0);
+h_bounce_i <= collision_q(1);
+v_bounce_i <= collision_q(2);
+bounce_n_i <= collision_q(3);
+miss_i <= collision_q(4);
 
 -- Figure 13 plus the explicit JAMMA/contact-latch adaptation boundary.
 U_SOLID_KICK_INPUT: entity work.JammaSwitchAdapter
@@ -445,10 +480,12 @@ U_CHECKS_KICK_INPUT: entity work.JammaSwitchAdapter
 
 -- Catch/Kick/Horizontal Direction
 U_CATCH_KICK: entity work.CatchKickHorizontalDirection
+    generic map(SAMPLE_COLLISIONS=>true)
 	port map(
+        SAMPLE_CLK=>collision_clk, HIT_SAMPLED=>hit_i,
 		BALL          => ball_i,
 		BLIP          => blip_i,
-		HIT           => hit_i,
+		HIT           => hit_raw_i,
 		DEFENSEMENn   => defensemen_n_i,
 		TEAM          => team_i,
 		ONE_PLAYER    => one_player_i,
@@ -494,9 +531,9 @@ U_VERT_SPEED: entity work.VerticalDirectionAndSpeed
 		V128n   => v128n_i,
 		VBOUNCE => v_bounce_i,
 		HIT     => hit_i,
-		PP2     => pp2_i,
-		PP3     => pp3_i,
-		PP4     => pp4_i,
+		PP2     => collision_q(5),
+		PP3     => collision_q(6),
+		PP4     => collision_q(7),
 		SERVEn  => serve_i,
 		STOPP   => stop_i,
 		STOPn   => stopn_i,

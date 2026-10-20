@@ -52,10 +52,13 @@ ghdl -a --std=93 "$ROOT/74LS/LS48.vhd"
 
 # IC library - 9316 presettable counter, 9314 latch, 9602 one-shot (Ball / Vertical Direction / Players)
 ghdl -a --std=93 "$ROOT/IC/IC9316.vhd"
+ghdl -a --std=93 "$ROOT/testbench/tb_IC9316_carry.vhd"
+ghdl -r --std=93 tb_IC9316_carry --assert-level=error
 ghdl -a --std=93 "$ROOT/IC/IC9314.vhd"
 ghdl -a --std=93 "$ROOT/IC/IC9602.vhd"
 
 # Design files
+ghdl -a --std=93 "$ROOT/CollisionSampleBank.vhd"
 ghdl -a --std=93 "$ROOT/ComputerClock.vhd"
 ghdl -a --std=93 "$ROOT/HorizontalSync.vhd"
 ghdl -a --std=93 "$ROOT/VerticalSync.vhd"
@@ -104,6 +107,10 @@ ghdl -r --std=93 tb_VerticalHitHold --stop-time=10us --assert-level=error
 ghdl -a --std=93 "$ROOT/testbench/tb_VerticalBallMotion.vhd"
 ghdl -r --std=93 tb_VerticalBallMotion --assert-level=error
 python3 visualize_vertical_ball.py
+
+# Approved collision adapter: both teams, glitch rejection, catch and kick.
+ghdl -a --std=93 "$ROOT/testbench/tb_CollisionSampling.vhd"
+ghdl -r --std=93 tb_CollisionSampling --assert-level=error
 
 # Testbench
 ghdl -a --std=93 "$ROOT/testbench/tb_SpinnerAdapter.vhd"

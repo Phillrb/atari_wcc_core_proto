@@ -72,6 +72,9 @@ HIT_TONE <= hit_tone_i;
 -- RC -> D4 CEP, B3 CLK1, C3 gate 4 input
 -- QC = HIT_TONE -> A3 gate 1;  QD -> A3 gate 3
 A4: entity work.IC9316
+    -- As on C4, pin 15 is a clock (B3 FF1). Store the terminal decode
+    -- to prevent count-bit skew from creating extra vertical phase edges.
+    generic map(REGISTERED_CARRY => true)
     port map(
         P1_CLRn => SERVE,
         P2_CLK  => HSYNCn,
@@ -182,6 +185,9 @@ B4: entity work.IC9316
 -- CEP=B4_RC (cascaded), CET='1'
 -- RC -> B3 CLK2, A2 gate 1, A3 gate 2
 C4: entity work.IC9316
+    -- C4 pin 15 clocks B3 directly. Store its terminal decode inside the IC
+    -- model to prevent a fitted 7 -> 8 decode glitch from clocking B3.
+    generic map(REGISTERED_CARRY => true)
     port map(
         P1_CLRn => SERVE,
         P2_CLK  => CLOCK_7,
