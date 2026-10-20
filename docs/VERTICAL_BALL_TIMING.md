@@ -1,5 +1,9 @@
 # Vertical ball rolling immediately after serve — 20 October 2026
 
+**Owner follow-up, 20 October:** the replacement corrected most observed issues.
+Checked attackers now hold the ball, but automatic catch release was missing.
+See [catch timeout diagnosis and replacement image](CATCH_TIMEOUT.md).
+
 The owner reported very fast vertical rolling, almost a column, immediately
 after serve following the collision timing changes. The existing fitted tests
 forced the vertical window and checked only horizontal motion, so they could

@@ -111,6 +111,8 @@ python3 visualize_vertical_ball.py
 # Approved collision adapter: both teams, glitch rejection, catch and kick.
 ghdl -a --std=93 "$ROOT/testbench/tb_CollisionSampling.vhd"
 ghdl -r --std=93 tb_CollisionSampling --assert-level=error
+ghdl -a --std=93 "$ROOT/testbench/tb_CatchTimeout.vhd"
+ghdl -r --std=93 tb_CatchTimeout --assert-level=error
 
 # Testbench
 ghdl -a --std=93 "$ROOT/testbench/tb_SpinnerAdapter.vhd"

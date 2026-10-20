@@ -10,7 +10,7 @@ architecture test of tb_TimeLineControl is
 begin
  clk <= not clk after 5 ns when not done else '0';
  dut: entity work.TimeLineCircuit generic map(START_V_INIT=>80,GAME_CLOCKS=>1610)
- port map(CLOCK_7=>clk,VRESETn=>'1',H1=>'0',H2=>'0',H4=>'0',H8=>'1',H16=>'0',H32=>'1',H64=>'1',H128=>'0',H256=>'0',
+ port map(CLOCK_7=>clk,VRESETn=>'1',H1n=>'1',H4=>'0',H128=>'0',
  V1=>v(0),V2=>v(1),V4=>v(2),V8=>v(3),V16=>v(4),V32=>v(5),V64=>v(6),V128=>v(7),V128n=>'0',V256=>v(8),C_PLUS_Dn=>'0',ATRC=>attract,TIME_LINEn=>line_n,END_OF_GAME=>finish);
  process
  begin

@@ -34,6 +34,11 @@ begin
   assert stop='1' and stopn='0' report "catch leading edge failed" severity failure;
   catch_clear<='0'; wait for 1 ns;
   assert stop='0' report "catch clear must be asynchronous" severity failure;
+  catch_trigger<='1'; catch_clear<='1'; wait for 30 ns;
+  catch_trigger<='0'; wait for 20 ns;
+  assert stop='1' report "second catch did not start" severity failure;
+  wait for 100 ns;
+  assert stop='0' and stopn='1' report "catch timeout did not auto-kick" severity failure;
   report "Figure 12 serve/catch tests passed";
   done<=true; wait;
  end process;

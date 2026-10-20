@@ -18,6 +18,9 @@
 -- states 0 and 3 only (uniform 3-state / 48px gap between columns). Also change L6
 -- gates 2 and 3 from M6_Q3 to M6_Q2 so TEAM and DEFENSEMENn toggle correctly between
 -- the new window pair (Q2 differs between states 0 and 3; Q3 does not).
+-- BLIP must follow the same Q1 XOR Q2 decode: low at both player states.
+-- Leaving BLIP on Q2 presets Figure 13 D8 during checked-pixel gaps at state 3,
+-- repeatedly retriggering J5 and preventing the three-second automatic kick.
 --
 -- Schematic-accurate J6: P3_A2 => M6_Q2, P4_B2 => M6_Q1
 -- Schematic-accurate L6: P5_B2 => M6_Q3, P10_B3 => M6_Q3
@@ -39,7 +42,7 @@ entity PlayersVerticalWindow is
         DEFENSEMENn : out STD_LOGIC;
         Q        : out STD_LOGIC;   -- D6 Q2 (pin 9)
         Qn       : out STD_LOGIC;   -- D6 pin 8 (Q2n) -> L7/H7 S0
-        BLIP     : out STD_LOGIC;  -- M6 Q2 (pin 9)
+        BLIP     : out STD_LOGIC;  -- adapted J6 input; original PCB uses M6 Q2
         PLAYER_WINDOWn : out STD_LOGIC  -- H6 pin 6 -> H7 pin 15 (mux enable)
     );
 end PlayersVerticalWindow;
@@ -88,7 +91,8 @@ begin
             P9_Q2    => M6_Q2,
             P8_Q3    => M6_Q3
         );
-    BLIP <= M6_Q2;
+    -- Preserve the schematic's shared BLIP/J6 input with the spacing adapter.
+    BLIP <= Q1_xor_Q2;
 
     -- D6 (LS74) FF2: CLK2 = M6_Q0 (pin 11), D2 = Q2n (pin 12 from pin 8). So toggles on M6_Q0.
     IC_D6: entity work.LS74
