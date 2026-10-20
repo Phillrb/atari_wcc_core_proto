@@ -1,5 +1,10 @@
 # Checked attacker catch timeout — 20 October 2026
 
+**Follow-up:** the owner confirmed improvement but found a solid-attacker
+rear-hit/front-edge trap. The original five alignments missed the far-edge
+BLIP overlap. See [rear-hit correction](REAR_CATCH_TIMEOUT.md) for the
+expanded regression and replacement image.
+
 The owner confirmed that the previous ball timing repair corrected most issues,
 but checked attackers held the ball indefinitely until the kick button was
 pressed. TM-035's Catch Circuit description requires an automatic kick after

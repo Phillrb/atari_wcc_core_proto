@@ -67,3 +67,6 @@ sim/score_rollover.gif
 sim/horizontal_stop*.csv
 sim/horizontal_stop.png
 sim/horizontal_stop.gif
+sim/catch_traversal.csv
+sim/catch_traversal.png
+sim/catch_traversal.gif

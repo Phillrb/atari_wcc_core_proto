@@ -14,3 +14,6 @@ done
 for parity in 0 1; do
     ghdl -r --std=93 tb_CatchTimeout -gCHECK_PARITY="'$parity'" --assert-level=error
 done
+ghdl -r --std=93 tb_CatchTimeout -gWALK_THROUGH=true --assert-level=error
+cp catch_traversal.csv "$ROOT/sim/catch_traversal.csv"
+python3 "$ROOT/sim/visualize_catch_traversal.py"

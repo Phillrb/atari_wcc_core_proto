@@ -21,6 +21,12 @@
 -- BLIP must follow the same Q1 XOR Q2 decode: low at both player states.
 -- Leaving BLIP on Q2 presets Figure 13 D8 during checked-pixel gaps at state 3,
 -- repeatedly retriggering J5 and preventing the three-second automatic kick.
+-- The eight-pixel ball can extend seven pixels past either player edge.
+-- Qualify the adapted BLIP with H8 so it stays low across that whole overlap
+-- region. Without this, ball offsets +1..+3 reach the following M6 state and
+-- re-arm D8 on every line. J6 retains the original adapted decode; H6 already
+-- requires H8 high for a player window, where BLIP equals that same decode.
+-- U_BLIP_GUARD is an FPGA spacing-adapter gate, not an original PCB gate.
 --
 -- Schematic-accurate J6: P3_A2 => M6_Q2, P4_B2 => M6_Q1
 -- Schematic-accurate L6: P5_B2 => M6_Q3, P10_B3 => M6_Q3
@@ -42,7 +48,7 @@ entity PlayersVerticalWindow is
         DEFENSEMENn : out STD_LOGIC;
         Q        : out STD_LOGIC;   -- D6 Q2 (pin 9)
         Qn       : out STD_LOGIC;   -- D6 pin 8 (Q2n) -> L7/H7 S0
-        BLIP     : out STD_LOGIC;  -- adapted J6 input; original PCB uses M6 Q2
+        BLIP     : out STD_LOGIC;  -- guarded spacing decode; original PCB uses M6 Q2
         PLAYER_WINDOWn : out STD_LOGIC  -- H6 pin 6 -> H7 pin 15 (mux enable)
     );
 end PlayersVerticalWindow;
@@ -59,8 +65,9 @@ architecture Schematic of PlayersVerticalWindow is
     signal H6_Y1 : STD_LOGIC;
     -- J6 gate 2: NOR(Q1_xor_Q2, M6_Q3, H6_Y1) -> H6 C2 (corrected; see header)
     signal J6_Y2 : STD_LOGIC;
-    -- Q1 XOR Q2: high at states 1,2,4,5; low at states 0,3 (used by J6 for uniform spacing)
+    -- Q1 XOR Q2: low at states 0,3,4; J6's Q3 input excludes state 4.
     signal Q1_xor_Q2 : STD_LOGIC;
+    signal blip_i : STD_LOGIC;
     -- H6 gate 2: NAND(H4n, H8, J6_Y2) -> PLAYER_WINDOWn (to H7 pin 15)
     signal H6_Y2 : STD_LOGIC;
     -- L6 outputs
@@ -91,8 +98,13 @@ begin
             P9_Q2    => M6_Q2,
             P8_Q3    => M6_Q3
         );
-    -- Preserve the schematic's shared BLIP/J6 input with the spacing adapter.
-    BLIP <= Q1_xor_Q2;
+    -- Extend the spacing adapter's catch guard beyond both player edges.
+    U_BLIP_GUARD: entity work.LS08
+        port map(P1_A1 => Q1_xor_Q2, P2_B1 => H8, P3_Y1 => blip_i,
+            P4_A2 => '0', P5_B2 => '0', P6_Y2 => open,
+            P9_A3 => '0', P10_B3 => '0', P8_Y3 => open,
+            P12_A4 => '0', P13_B4 => '0', P11_Y4 => open);
+    BLIP <= blip_i;
 
     -- D6 (LS74) FF2: CLK2 = M6_Q0 (pin 11), D2 = Q2n (pin 12 from pin 8). So toggles on M6_Q0.
     IC_D6: entity work.LS74
