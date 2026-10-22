@@ -15,25 +15,32 @@ This project is a VHDL recreation of the classic 1974 discrete logic arcade game
 | Phase 2 | Game control: electronic latch, credit, start, game select, time line, serve timing | Coin/start, attract, two-minute timer and serve integrated and simulation-tested; runtime one-/two-player selection (board defaults to two-player); analogue models remain |
 | Phase 3 | Ball system: motion, direction & speed, catch/kick, window/miss/bounce | **Done** |
 | Phase 4 | Players: all forwards, defense/goalie (solid + striped), ramp, mux, summing | **Done** |
-| Phase 5 | Score circuit, sound circuit, moving hole | Score circuit implemented and integrated; **goal counting FPGA-tested and confirmed working on 18 October 2026** (see [verification](docs/SCORE_ROLLOVER_TIMING.md)); sound (Fig 20) implemented, integrated and simulation-tested; **moving hole (Fig 18) incomplete: opening renders but drifts upward and wraps instead of reversing** (see [notes](docs/MOVING_HOLE_FIG18.md)) |
+| Phase 5 | Score circuit, sound circuit, moving hole | Score circuit implemented and integrated; **goal counting FPGA-tested and confirmed working on 18 October 2026** (see [verification](docs/SCORE_ROLLOVER_TIMING.md)); sound (Fig 20) implemented, integrated and simulation-tested; **moving-hole reversal (Fig 18) corrected and simulation-tested on 22 October 2026; FPGA fit and hardware verification pending** (see [notes](docs/MOVING_HOLE_FIG18.md)) |
 | Phase 6 | Video output and board integration | Board wrapper, PLL and composite output integrated; synthesis/fitting passed and hardware video tested. Original Fig 22 resistor network recreation remains outstanding |
 
 See [AGENTS.md](AGENTS.md) for the full circuit-by-circuit breakdown.
 
-### One-player status and known shortfalls
+### One-player status and remaining verification
 
 One-player mode is **work in progress**. Simulation now shows the required solid
 left goalie and two solid forwards, with no solid defenders or checked players.
 The missing Figure 11 player-window mode connection has been corrected and
 regression-tested; the default two-player paid-play screenshot is unchanged.
 
-**Moving-hole reversal is not working.** The right-hand opening is 16 scanlines
-high, but currently moves upward and wraps around instead of reversing at the
-upper and lower playfield limits. The implemented 9/11 presets produce measured
-311/309-line recurrence against a 313-line frame, so both settings move upward.
-The passing counter tests describe that implementation; they do not establish
-correct up/down gameplay. Preset wiring, original IC behavior and frame timing
-must be reconciled with the source schematics before correcting this.
+**Moving-hole reversal is corrected in simulation.** The owner-approved change
+on 22 October 2026 selects 6/8 presets, producing 314/312-line recurrence against
+the 313-line raster: one line down or up per frame. The previous 9/11 presets
+produced 311/309-line recurrence, so both settings moved upward. An explicit
+LS74 sampling stage now captures the settled playfield boundary, preventing a
+ripple-counter transient from causing an early upper reversal.
+
+The actual-raster regression checks 998 complete fields: the opening remains
+16 scanlines high, moves between start lines 83 and 224, and repeatedly reverses
+without wrapping or disappearing. The standard 650 ms full-core simulation also
+passes, with its PNG and GIF visually inspected; repeated reversals are checked
+by the longer focused fixture. This is an approved FPGA adaptation: the manual's
+6/8 prose conflicts with Figure 18's 9/11 wiring, and boundary sampling is added
+logic. See the [correction and verification record](docs/MOVING_HOLE_FIX_PROPOSAL.md).
 
 Mode selection uses the active-low `GameSelect_I` port on the core and board
 wrapper: low selects one player, high selects two players. Connect the JAMMA
@@ -46,7 +53,7 @@ been verified in simulation, but have not yet been validated by Quartus
 synthesis/fitting or on FPGA hardware; earlier hardware results below apply to
 previous revisions.
 
-See the [detailed handoff and remaining correction plan](docs/ONE_PLAYER_HANDOFF.md)
+See the [historical one-player handoff](docs/ONE_PLAYER_HANDOFF.md)
 and [Figure 18 wiring and timing notes](docs/MOVING_HOLE_FIG18.md).
 
 ## Project Goals and Methodology
@@ -62,7 +69,7 @@ and [Figure 18 wiring and timing notes](docs/MOVING_HOLE_FIG18.md).
 
 ## Architecture
 
-The design mirrors how the original 1970s hardware would work: discrete 74LS-series TTL ICs wired together at the gate/flip-flop level. Schematic-defined TTL logic must use **direct entity instantiation** (`entity work.LS04` etc.) for traceability and GHDL compatibility. The current implementation still includes behavioral models for analog functions and top-level serve/reset/miss control, plus direct video-combining logic; these are exceptions to the intended gate-level fidelity.
+The design mirrors how the original 1970s hardware would work: discrete 74LS-series TTL ICs wired together at the gate/flip-flop level. Schematic-defined TTL logic must use **direct entity instantiation** (`entity work.LS04` etc.) for traceability and GHDL compatibility. The current implementation still includes behavioral models for analog functions and top-level miss qualification, plus FPGA sampling adapters and direct video-combining logic; these are exceptions to the intended gate-level fidelity.
 
 ## Tooling
 - Quartus II version 13.0.1 Service Pack 1 for synthesis.
@@ -74,7 +81,7 @@ The design mirrors how the original 1970s hardware would work: discrete 74LS-ser
 ```bash
 cd sim
 bash run_sim.sh                # Two players (default)
-ONE_PLAYER=1 bash run_sim.sh   # One player (known shortfalls above)
+ONE_PLAYER=1 bash run_sim.sh   # One player
 ```
 
 This compiles the simulation sources, runs for **650 ms** by default, and calls the Python visualizer. Override the duration with, for example, `STOP_MS=900 bash run_sim.sh`. Output:
@@ -90,6 +97,12 @@ The testbench inserts a coin, presses Start, and checks return to attract. It ac
 Requires Python 3 with `Pillow`: `pip3 install Pillow`
 
 For VCD waveform debugging, add `--vcd=atari_wcc.vcd` to the GHDL run command in `run_sim.sh`.
+
+Moving-hole regression tests can be run from the repository root with
+`bash sim/run_moving_hole_tests.sh`. They cover the IC models, preset periods,
+boundary reversal and mode selection, including a comparison of raw and sampled
+playfield boundaries. The suite generates `sim/moving_hole_timing.png` / `.gif`
+and `sim/moving_hole_raster.png` / `.gif`.
 
 Sound regression tests can be run from the repository root with `bash sim/run_sound_tests.sh`. See [Figure 20 sound circuit notes](docs/SOUND_CIRCUIT_FIG20.md) for coverage and timing estimates.
 
@@ -111,7 +124,7 @@ See [board clock, pinout and build details](docs/MASTER_CLOCK_AND_VIDEO_ADOPTION
 
 ## Coin, Start and Attract Mode
 
-Power-up enters silent attract mode with closed goals and fixed player positions. Insert a coin, release it, then press Start to begin a **two-minute, two-player game**. One coin enables one game; expiry returns to attract and retains the scores.
+Power-up enters silent attract mode with closed goals and fixed player positions. Insert a coin, release it, then press Start to begin a **two-minute game** in the selected one- or two-player mode (two players by default). One coin enables one game; expiry returns to attract and retains the scores.
 
 The board uses Sprint2's `Coin1_I` on **pin 120** and `Start1_I` on **pin 112**, both normally-open switches to GND with FPGA weak pull-ups. A two-stage synchronizer and 5 ms debounce adapt these single-contact inputs to the original changeover-switch latch behavior. The game circuitry then qualifies the coin and generates START/ATRC through Figure 8's TTL logic.
 
