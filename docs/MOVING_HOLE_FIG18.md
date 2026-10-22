@@ -1,15 +1,17 @@
 # Moving hole — TM-035 Figure 18
 
-`MovingHoleCircuit.vhd` implements the confirmed Figure 18 wiring using explicit
-IC instances. `HOLE` is active high and feeds Figure 19's existing input; E3's
+`MovingHoleCircuit.vhd` uses explicit IC instances with the owner-approved
+313-line adaptation of 22 October 2026: L4 presets 6/8 and settled boundary
+sampling in the top level. These are documented deviations from Figure 18.
+`HOLE` is active high and feeds Figure 19's existing input; E3's
 inverted output feeds F3 internally. `STARTn` asynchronously clears L4, M4 and
 H1, but does not reset K1's direction latch.
 
 | Device | Connections used |
 | --- | --- |
 | F3, 7402 gate 1 | Pins 2/3 = `(C+D)n` / `HOLEn`; pin 1 clocks K1 pin 11 |
-| K1, 7474 FF2 | D pin 12 = V128; preset/clear high; Q pin 9 feeds L4 pin 4 |
-| L4, 9316 | Clock = HSYNCn; A/B/C/D = 1/K1-Q/0/1; both enables high |
+| K1, 7474 FF2 | D pin 12 = V128; preset/clear high; Q pin 9 feeds L4 pin 6; Qn pin 8 feeds L4 pins 4/5 |
+| L4, 9316 | Clock = HSYNCn; A/B/C/D = 0/K1-Qn/K1-Qn/K1-Q; both enables high |
 | M4, 9316 | Same clock; A/B/C/D = 0/0/1/1; CEP = L4 TC, CET high |
 | H1, 74107 FF1 | Clock pin 12 = L4 TC; J/K pins 1/4 = M4 TC; clear = STARTn |
 | M1, 7408 gate 4 | Pins 12/13 = H1 Q / M4 TC; pin 11 = HOLE |
@@ -34,29 +36,33 @@ all seven other circuit files using LS107. This is a functional model, not an
 analog propagation-delay or metastability simulation; FPGA timing remains a
 separate board-validation task.
 
-## Confirmed schematic/prose discrepancy
+## Source discrepancy and approved adaptation
 
 The user confirmed the visible L4 preset wiring: pins 3 and 6 high, pin 5 low,
 pin 4 driven by K1 Q. That gives presets **9 and 11**, not the contradictory
-9/6/8 values in the prose. The implementation preserves these connections.
+9/6/8 values in the prose. The original implementation preserved those
+connections, but both resulting periods moved upward on the 313-line raster.
 
 After reset, the first HOLE starts at HSYNCn rising edge 496 and ends at edge
 512. Each subsequent pulse lasts **16 scanlines**. Loading M4:L4 with `C9` or
 `CB` gives an interval of `512 - (192 + preset)` between successive HOLE rising
-edges: **311 or 309 lines**, respectively. The reload edge is already included
-in that count. Tests force each K1 state and assert these intervals.
+edges: **311 or 309 lines**, respectively. The reload edge is included.
 
-With this project's **313-line raster**, these periods move the opening upward
-by two or four lines per frame. Boundary sampling changes the speed; it does
-**not** reverse motion. The manual's description of bounded up/down movement is
-therefore **not reproduced by the confirmed netlist**. No alternate presets,
-counter changes or timing corrections have been invented to conceal this.
-Further source clarification is needed before changing the wiring to reproduce
-that description. The long diagnostic explicitly includes wraparound.
+The owner approved the [combined correction](MOVING_HOLE_FIX_PROPOSAL.md) on
+22 October 2026. L4 now loads **6 at the upper boundary** (314-line period,
+one line downward per frame) and **8 at the lower boundary** (312-line period,
+one line upward). This follows PCB-47's stated 6/8 behavior without claiming
+that Figure 18's drawing has been reconciled.
 
-A separately tested [6/8-preset proposal](MOVING_HOLE_FIX_PROPOSAL.md) follows
-the manual's stated reversal behavior. It remains an explicit drawing
-deviation awaiting a project decision; the production circuit is unchanged.
+The actual vertical ripple counter also produces a false `(C+D)n` pulse during
+the 95-to-96 transition. The top level therefore extends the existing explicit
+LS74 collision sample bank to ten channels: channel 8 captures `(C+D)n` after
+the raster settles; channel 9 is tied low. Only the moving-hole input uses this
+new sample. This is an approved FPGA timing adapter, not a PCB gate.
+
+With actual Figure 5/9 feedback, the sampled circuit reverses with opening
+starts at lines **83 and 224**, retains a **16-line width**, and does not wrap.
+No IC models, raster timing or other collision-channel assignments changed.
 
 ## Running verification
 
@@ -74,19 +80,25 @@ Credit configuration remains the existing one-game-per-coin selection.
 
 The focused suite checks the 9316, 7474, both 107 variants, asynchronous reset,
 16-line width, both presets, direction retention across reset, boundary gating,
-Figure 19 polarity/mode selection and 400 PAL fields. The old LS74/LS107 tests
-now use direct entity instantiation so GHDL actually connects their DUTs.
+Figure 19 polarity/mode selection and 1,000 fields with ideal boundaries.
+An additional actual-raster regression checks 998 complete fields, comparing
+raw and sampled boundary feedback. It requires repeated reversals, one-line
+motion, constant width and no missing openings. The short full-core capture
+checks integration/video; repeated reversals are verified by the longer fixture.
 
 Generated artifacts (ignored by git):
 
 - `sim/moving_hole_timing.png`: measured HOLE versus field and scanline.
-- `sim/moving_hole.gif`: animated signal diagnostic over 400 fields.
+- `sim/moving_hole.gif`: animated signal diagnostic over 1,000 fields.
+- `sim/moving_hole_raster.png` and `sim/moving_hole_raster.gif`: actual-raster
+  comparison (red = raw boundary, green = sampled boundary).
 - `sim/moving_hole_core.png` and `sim/moving_hole_core.gif`: retained full-core
   one-player video from `ONE_PLAYER=1 bash run_sim.sh`.
 - `sim/frame_output.png` and `sim/gameplay.gif`: actual full-core video from the
   most recent `run_sim.sh` invocation.
 
 The signal diagnostic is labelled separately from the full-core video. It
-renders the actual testbench samples, including the unresolved motion behavior.
+renders actual testbench samples. Quartus fit, post-fit timing and physical
+FPGA verification of this adaptation remain outstanding.
 
 For remaining gameplay corrections and source questions, see [one-player handoff](ONE_PLAYER_HANDOFF.md).

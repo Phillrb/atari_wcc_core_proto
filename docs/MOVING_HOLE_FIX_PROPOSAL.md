@@ -1,9 +1,10 @@
 # Moving-hole reversal proposal
 
-Status: tested experimental proposal, reviewed 22 October 2026. Production VHDL is
-unchanged. The proposed sources are in `/tmp/wcc-moving-hole-candidate` and the
-[combined candidate patch](moving_hole_fix_candidate.patch). Adoption requires
-an explicit decision about the schematic deviations below.
+Status: **approved and applied on 22 October 2026**. The owner approved both
+the 6/8 presets and settled boundary sampling. Production VHDL now contains
+the combined correction. The [reviewed patch](moving_hole_fix_candidate.patch)
+is retained as an archival diff against commit `7c3e8a4`; do not reapply it to
+the updated source. The sections below record the design decision and evidence.
 
 ## 1. Select periods on opposite sides of the 313-line frame
 
@@ -82,7 +83,7 @@ which original PCB/manual variant was correct.
 
 ## Reproduction and validation
 
-Apply `moving_hole_fix_candidate.patch` to an isolated copy, then run:
+Run the applied correction directly:
 
 ```sh
 bash sim/run_moving_hole_tests.sh
@@ -95,7 +96,7 @@ reset and direction retention, boundary gating, Figure 19 mode selection,
 1,000 fields with ideal boundaries, and the actual-raster comparison above.
 The new timing regression rejects the production 9/11 circuit with
 `HOLE recurrence too early`. The patch passes `git apply --check` against the
-current production source.
+pre-adoption production source at `7c3e8a4`.
 
 The combined candidate's standard 650 ms full-core run passes paid start,
 serve and expiry checks. Its paid game lasts 300 ms, so repeated reversal is
@@ -111,7 +112,8 @@ bottom/top/bottom, but its upper reversal was the premature line-95 event.
 That run exposed the need for boundary sampling. It must not be described as
 an eight-second full-core test of the combined candidate.
 
-For reproducing that earlier diagnostic only, apply
+For reproducing that earlier diagnostic only, start with an isolated checkout
+of `7c3e8a4` (not the updated production source), then apply
 `moving_hole_6_8_candidate.patch` instead of the combined patch, run the standard
 simulation, then apply `moving_hole_video_diagnostic.patch` in the isolated copy:
 

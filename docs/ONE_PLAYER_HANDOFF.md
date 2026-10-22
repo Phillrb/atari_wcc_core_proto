@@ -1,5 +1,10 @@
 # One-player correction handoff — 2026-09-30
 
+Historical handoff: the moving-hole reversal work below was subsequently
+approved and applied on 22 October 2026. Current behavior uses 6/8 presets and
+settled boundary sampling; see [current verification](MOVING_HOLE_FIG18.md).
+The earlier unresolved-status statements below describe the September state.
+
 ## Required result
 
 Use `diagrams/A_Playfield_Player_vs_Game.png` as the visual acceptance reference:

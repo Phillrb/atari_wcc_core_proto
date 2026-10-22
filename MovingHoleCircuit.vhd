@@ -3,8 +3,9 @@
 --      M1(LS08 gate 4), J1(LS00 gate 1), E3(LS04 gate 2).
 -- HOLE is active HIGH; E3 supplies its complement to F3 internally.
 -- K1 retains direction across START; STARTn clears L4, M4 and H1 only.
--- Confirmed 9/11 presets yield 311/309-line periods, not bounded up/down
--- motion on the 313-line raster. See docs/MOVING_HOLE_FIG18.md.
+-- Owner-approved adaptation (2026-10-22): 6/8 presets from PCB-47 prose.
+-- Differs from Figure 18; the top level samples the settled boundary decode.
+-- 314/312-line recurrence gives opposite drift on the 313-line raster.
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -22,8 +23,8 @@ end MovingHoleCircuit;
 architecture Schematic of MovingHoleCircuit is
     -- F3 pin 1 clocks K1 FF2 when HOLE overlaps a playfield boundary
     signal boundary_clock : STD_LOGIC;
-    -- K1 pin 9 selects L4's preset bit B
-    signal direction_i    : STD_LOGIC;
+    -- K1 Q/Qn select adapted L4 presets 8/6
+    signal direction_i, direction_n : STD_LOGIC;
     -- L4/M4 terminal-count outputs (pin 15)
     signal l4_tc, m4_tc    : STD_LOGIC;
     -- H1 pin 3 supplies the upper counter stage
@@ -48,7 +49,7 @@ begin
         );
 
     -- ========== K1 (LS74) FF2: direction latch
-    -- V128 -> pin 12 (D2), F3 pin 1 -> pin 11 (CLK2); pin 9 -> L4 pin 4
+    -- V128 -> D2, F3 -> CLK2; adapted Q -> D, Qn -> B/C
     -- Preset and clear are tied high: STARTn does not reset direction.
     IC_K1: entity work.LS74
         port map(
@@ -56,23 +57,23 @@ begin
             P11_CLK2  => boundary_clock, -- F3 pin 1 to K1 pin 11
             P10_SET2n => '1',           -- Preset inactive
             P13_CLR2n => '1',           -- Clear inactive
-            P9_Q2     => direction_i,   -- K1 pin 9 to L4 pin 4
-            P8_Q2n    => open,
+            P9_Q2     => direction_i,   -- K1 pin 9 to L4 pin 6
+            P8_Q2n    => direction_n,
             P1_CLR1n  => '1', P2_D1 => '0', P3_CLK1 => '0', P4_SET1n => '1',
             P5_Q1     => open, P6_Q1n => open
         );
 
     -- ========== L4 (9316): low counter and variable preset
-    -- A=1, B=K1 pin 9, C=0, D=1: confirmed Figure 18 presets 9 or 11.
+    -- Adapted A=0, B=C=K1 Qn, D=K1 Q: presets 6 or 8.
     -- Pin 15 -> M4 pin 7, H1 pin 12 and J1 pin 1
     IC_L4: entity work.IC9316
         port map(
             P1_CLRn => STARTn,      -- STARTn to L4 pin 1
             P2_CLK  => HSYNCn,      -- HSYNCn to L4 pin 2
-            P3_A    => '1',         -- Preset bit A (LSB)
-            P4_B    => direction_i, -- K1 pin 9 to L4 pin 4
-            P5_C    => '0',         -- Preset bit C
-            P6_D    => '1',         -- Preset bit D (MSB)
+            P3_A    => '0',         -- Adapted presets 6 / 8
+            P4_B    => direction_n, -- K1 pin 8
+            P5_C    => direction_n, -- K1 pin 8
+            P6_D    => direction_i, -- K1 pin 9
             P7_CEP  => '1',         -- Parallel count enable
             P10_CET => '1',         -- Trickle count enable
             P9_LDn  => load_n,      -- J1 pin 3 to L4 pin 9

@@ -76,7 +76,7 @@ signal paddles_i      : STD_LOGIC;
 signal hit_i          : STD_LOGIC;
 signal hit_raw_i, h_bounce_raw_i, v_bounce_raw_i, bounce_n_raw_i, miss_raw_i : STD_LOGIC;
 signal clk7_n_sample, collision_clk : STD_LOGIC;
-signal collision_d, collision_q : STD_LOGIC_VECTOR(7 downto 0);
+signal collision_d, collision_q : STD_LOGIC_VECTOR(9 downto 0);
 signal pp2_next, pp3_next, pp4_next : STD_LOGIC;
 signal atrcn_i, atrc_i : STD_LOGIC; -- ATRCn HIGH in play, ATRC HIGH in attract
 signal coin_pressed, start_pressed, credit_i, coin_accepted_i, credit_expired_i, latch_presetn_i : STD_LOGIC;
@@ -412,7 +412,7 @@ end process;
 -- Moving Hole circuit
 U_MOVING_HOLE: entity work.MovingHoleCircuit
     port map (
-        C_PLUS_Dn => c_plus_d_n_i,
+        C_PLUS_Dn => collision_q(8), -- Settled wall decode, no ripple clocks
         HSYNCn    => hsyncn_i,
         STARTn    => start_n_i,
         V128      => v128_i,
@@ -460,8 +460,11 @@ U_COLLISION_PP4: entity work.LS153
     port map(P1_Ea=>'0', P2_S1=>'0', P14_S0=>hit_raw_i,
         P6_1I0=>collision_q(7), P5_1I1=>pp4_i, P4_1I2=>'0', P3_1I3=>'0', P7_1Y=>pp4_next,
         P10_2I0=>'0', P11_2I1=>'0', P12_2I2=>'0', P13_2I3=>'0', P9_2Y=>open, P15_Eb=>'1');
-collision_d <= pp4_next & pp3_next & pp2_next & miss_raw_i & bounce_n_raw_i & v_bounce_raw_i & h_bounce_raw_i & hit_raw_i;
+-- Owner-approved FPGA adaptation (2026-10-22): sample the hole boundary on channel 8.
+-- Channel 9 ties off the other half of the added explicit LS74 pair.
+collision_d <= '0' & c_plus_d_n_i & pp4_next & pp3_next & pp2_next & miss_raw_i & bounce_n_raw_i & v_bounce_raw_i & h_bounce_raw_i & hit_raw_i;
 U_COLLISION_EVENTS: entity work.CollisionSampleBank
+    generic map(WIDTH=>10)
     port map(SAMPLE_CLK=>collision_clk, D=>collision_d, Q=>collision_q);
 hit_i <= collision_q(0);
 h_bounce_i <= collision_q(1);

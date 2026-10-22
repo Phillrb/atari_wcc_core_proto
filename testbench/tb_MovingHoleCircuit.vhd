@@ -1,11 +1,11 @@
--- Figure 18 pin-netlist regression. Timing expectations follow the confirmed
--- 9/11 presets, not the inconsistent numeric values in the manual prose.
+-- Approved 6/8-preset regression for the 313-line raster.
+-- Uses the approved wiring from docs/MOVING_HOLE_FIX_PROPOSAL.md.
 library ieee;
 use ieee.std_logic_1164.all;
 use std.textio.all;
 entity tb_MovingHoleCircuit is end;
 architecture test of tb_MovingHoleCircuit is
-    constant SCAN_LINES : integer := 313*400;
+    constant SCAN_LINES : integer := 313*1000;
     signal hs_n : std_logic := '0';
     signal start_n : std_logic := '0';
     signal boundary_n : std_logic := '1';
@@ -30,6 +30,8 @@ begin
         file trace : text open write_mode is "moving_hole_trace.csv";
         variable row : line;
         variable width, previous_rise, rise_count : integer := 0;
+        variable last_position, position, delta, last_delta : integer := 0;
+        variable top_turns, bottom_turns, frame_width : integer := 0;
         variable previous_hole : std_logic := '0';
         procedure tick is
         begin
@@ -79,31 +81,31 @@ begin
         expect_first_pulse;
         assert windows='1' and windows_n='0'
             report "Figure 19 must accept positive HOLE on the right" severity failure;
-        -- Sample bottom boundary (V128=1), choosing preset 11.
+        -- Sample bottom boundary (V128=1), choosing preset 8.
         v128<='1'; wait for 2 ns; boundary_n<='0'; wait for 2 ns;
         boundary_n<='1'; wait for 2 ns;
         finish_pulse;
         assert windows='0' report "Right opening remained asserted" severity failure;
-        next_pulse(309);
-        -- Sample top boundary (V128=0), choosing preset 9.
+        next_pulse(312);
+        -- Sample top boundary (V128=0), choosing preset 6.
         v128<='0'; wait for 2 ns; boundary_n<='0'; wait for 2 ns;
         boundary_n<='1'; wait for 2 ns;
         finish_pulse;
         -- Boundary while HOLE is absent must not change K1.
         v128<='1'; wait for 2 ns; boundary_n<='0'; wait for 2 ns;
         boundary_n<='1'; wait for 2 ns;
-        next_pulse(311);
+        next_pulse(314);
         -- Reset during a pulse; counters reset, K1 direction remains intact.
         reset;
         expect_first_pulse;
         finish_pulse;
-        next_pulse(311);
+        next_pulse(314);
         v128<='1'; wait for 2 ns; boundary_n<='0'; wait for 2 ns;
         boundary_n<='1'; wait for 2 ns;
         reset;
         expect_first_pulse;
         finish_pulse;
-        next_pulse(309);
+        next_pulse(312);
 
         -- Figure 19 mode/attract gating, independent of moving-hole phase.
         one_player<='0'; v64<='0'; wait for 2 ns;
@@ -118,11 +120,13 @@ begin
         assert windows='0' report "Attract must suppress openings" severity failure;
         attract<='0'; h256n<='0';
 
-        -- Long scan: 400 PAL fields, including boundary sampling. Export actual
+        -- Long scan: 1000 fields, including boundary sampling. Export actual
         -- DUT signal samples for a diagnostic animation, not an invented path.
         reset;
         write(row, string'("frame,line,hole")); writeline(trace,row);
         for n in 0 to SCAN_LINES-1 loop
+            -- V and boundary decode change before HSYNCn within the line,
+            -- as in the core (HRESET precedes the HSYNCn rising edge).
             if (n mod 313)/128 mod 2=1 then v128<='1'; else v128<='0'; end if;
             if (n mod 313>=80 and n mod 313<=83) or
                (n mod 313>=240 and n mod 313<=243) then
@@ -130,17 +134,41 @@ begin
             else boundary_n<='1'; end if;
             tick;
             if hole='1' then
+                frame_width:=frame_width+1;
                 width:=width+1;
                 if previous_hole='0' then
                     if rise_count>0 then
-                        assert n-previous_rise=309 or n-previous_rise=311
+                        assert n-previous_rise=312 or n-previous_rise=314
                             report "Unexpected recurrence in long scan" severity failure;
                     end if;
+                    position:=n mod 313;
+                    assert position>=80 and position+15<=243
+                        report "HOLE escaped playfield bounds" severity failure;
+                    if rise_count>0 then
+                        delta:=position-last_position;
+                        assert delta=1 or delta=-1
+                            report "HOLE jumped/wrapped rather than moving one line" severity failure;
+                        if last_delta=-1 and delta=1 then
+                            assert last_position=83 report "Top reversal at wrong line" severity failure;
+                            top_turns:=top_turns+1;
+                        elsif last_delta=1 and delta=-1 then
+                            assert last_position=224 report "Bottom reversal at wrong line" severity failure;
+                            bottom_turns:=bottom_turns+1;
+                        end if;
+                        last_delta:=delta;
+                    end if;
+                    last_position:=position;
                     previous_rise:=n; rise_count:=rise_count+1;
                 end if;
             elsif previous_hole='1' then
                 assert width=16 report "Long-scan pulse width is not 16" severity failure;
                 width:=0;
+            end if;
+            if n mod 313=312 then
+                if n/313>=1 then
+                    assert frame_width=16 report "A complete frame lost the 16-line hole" severity failure;
+                end if;
+                frame_width:=0;
             end if;
             previous_hole:=hole;
             assert windows=hole report "Right window polarity mismatch" severity failure;
@@ -149,7 +177,11 @@ begin
             if hole='1' then write(row,1); else write(row,0); end if;
             writeline(trace,row);
         end loop;
-        assert rise_count>390 report "Long scan did not exercise repeated pulses" severity failure;
+        assert top_turns>=3 and bottom_turns>=3
+            report "Did not verify three reversals at each boundary" severity failure;
+        report "Bounded motion: top turns=" & integer'image(top_turns) &
+               " bottom turns=" & integer'image(bottom_turns);
+        assert rise_count>990 report "Long scan did not exercise repeated pulses" severity failure;
         report "Moving-hole reset, width, presets, boundary gating, mode and long-scan tests passed";
         wait;
     end process;

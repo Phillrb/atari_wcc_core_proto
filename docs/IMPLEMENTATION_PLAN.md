@@ -105,7 +105,7 @@ All players wired in atari_wcc.vhd and visible in simulation.
 | Task | What |
 |------|------|
 | 5.1 | **Hit Circuit** – Fig 17 (K6 LS08); simple AND. |
-| 5.2 | **Moving Hole** – Fig 18 implemented and tested; F3, M1, J1, E3, K1, H1, L4, M4. Confirmed 9/11 presets do not reverse on the 313-line raster; see [verification notes](MOVING_HOLE_FIG18.md). |
+| 5.2 | **Moving Hole** – Fig 18 implemented and tested; F3, M1, J1, E3, K1, H1, L4, M4. Approved 6/8 presets and settled boundary sampling restore reversal on the 313-line raster (22 October 2026). RTL verified; board timing pending. See [verification notes](MOVING_HOLE_FIG18.md). |
 | 5.3 | **Window/Miss/Bounce** – Fig 19 (done as part of Phase 3.5). |
 | 5.4 | **Score Circuit — IMPLEMENTED AND INTEGRATED** – Fig 21, `ScoreCircuit.vhd`. RTL and fitted timing regressions pass following the Q0 clock-routing correction. Project owner confirmed goal counting works properly on FPGA on 18 October 2026. See [score timing and verification](SCORE_ROLLOVER_TIMING.md). |
 | 5.5 | **Sound Circuit** – Fig 20 (J9, M9, E5 IC9602, L8 LS00, E7 LS27). |

@@ -17,7 +17,7 @@ def render(trace_path, output_dir):
     chart = Image.new("RGB", (fields * 2 + 80, 313 * 2 + 65), "#171717")
     chart.paste(trace.resize((fields * 2, 626), getattr(Image, "Resampling", Image).NEAREST), (60, 35))
     draw = ImageDraw.Draw(chart)
-    draw.text((12, 10), "Figure 18: actual HOLE samples (9/11 presets, 313 lines/frame)", fill="white")
+    draw.text((12, 10), "Figure 18: actual HOLE samples (adapted 6/8 presets, 313 lines/frame)", fill="white")
     for line in (0, 80, 128, 240, 312):
         y = 35 + line * 2
         draw.text((22, y), str(line), fill="white")
