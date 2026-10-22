@@ -1,0 +1,26 @@
+{
+  "complete_paid_frames_checked": 390,
+  "frame_lines": 313,
+  "line_ns": 63700,
+  "first_hole_line_min": 95,
+  "first_hole_line_max": 224,
+  "width": 16,
+  "turns": [
+    {
+      "frame_in_checked_run": 99,
+      "line": 224,
+      "boundary": "bottom"
+    },
+    {
+      "frame_in_checked_run": 228,
+      "line": 95,
+      "boundary": "top"
+    },
+    {
+      "frame_in_checked_run": 357,
+      "line": 224,
+      "boundary": "bottom"
+    }
+  ],
+  "sim_time_ms": 7999.96232
+}

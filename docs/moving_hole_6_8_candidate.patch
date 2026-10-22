@@ -1,0 +1,225 @@
+diff --git a/MovingHoleCircuit.vhd b/MovingHoleCircuit.vhd
+--- a/MovingHoleCircuit.vhd
++++ b/MovingHoleCircuit.vhd
+@@ -3,8 +3,8 @@
+ --      M1(LS08 gate 4), J1(LS00 gate 1), E3(LS04 gate 2).
+ -- HOLE is active HIGH; E3 supplies its complement to F3 internally.
+ -- K1 retains direction across START; STARTn clears L4, M4 and H1 only.
+--- Confirmed 9/11 presets yield 311/309-line periods, not bounded up/down
+--- motion on the 313-line raster. See docs/MOVING_HOLE_FIG18.md.
++-- EXPERIMENT ONLY: 6/8 presets from PCB-47 prose; differs from Figure 18.
++-- 314/312-line recurrence gives opposite drift on the 313-line raster.
+ 
+ library IEEE;
+ use IEEE.STD_LOGIC_1164.ALL;
+@@ -22,8 +22,8 @@
+ architecture Schematic of MovingHoleCircuit is
+     -- F3 pin 1 clocks K1 FF2 when HOLE overlaps a playfield boundary
+     signal boundary_clock : STD_LOGIC;
+-    -- K1 pin 9 selects L4's preset bit B
+-    signal direction_i    : STD_LOGIC;
++    -- K1 Q/Qn select candidate L4 presets 8/6
++    signal direction_i, direction_n : STD_LOGIC;
+     -- L4/M4 terminal-count outputs (pin 15)
+     signal l4_tc, m4_tc    : STD_LOGIC;
+     -- H1 pin 3 supplies the upper counter stage
+@@ -48,7 +48,7 @@
+         );
+ 
+     -- ========== K1 (LS74) FF2: direction latch
+-    -- V128 -> pin 12 (D2), F3 pin 1 -> pin 11 (CLK2); pin 9 -> L4 pin 4
++    -- V128 -> D2, F3 -> CLK2; candidate Q -> D, Qn -> B/C
+     -- Preset and clear are tied high: STARTn does not reset direction.
+     IC_K1: entity work.LS74
+         port map(
+@@ -56,23 +56,23 @@
+             P11_CLK2  => boundary_clock, -- F3 pin 1 to K1 pin 11
+             P10_SET2n => '1',           -- Preset inactive
+             P13_CLR2n => '1',           -- Clear inactive
+-            P9_Q2     => direction_i,   -- K1 pin 9 to L4 pin 4
+-            P8_Q2n    => open,
++            P9_Q2     => direction_i,   -- Candidate direction Q
++            P8_Q2n    => direction_n,
+             P1_CLR1n  => '1', P2_D1 => '0', P3_CLK1 => '0', P4_SET1n => '1',
+             P5_Q1     => open, P6_Q1n => open
+         );
+ 
+     -- ========== L4 (9316): low counter and variable preset
+-    -- A=1, B=K1 pin 9, C=0, D=1: confirmed Figure 18 presets 9 or 11.
++    -- Candidate A=0, B=C=K1 Qn, D=K1 Q: presets 6 or 8.
+     -- Pin 15 -> M4 pin 7, H1 pin 12 and J1 pin 1
+     IC_L4: entity work.IC9316
+         port map(
+             P1_CLRn => STARTn,      -- STARTn to L4 pin 1
+             P2_CLK  => HSYNCn,      -- HSYNCn to L4 pin 2
+-            P3_A    => '1',         -- Preset bit A (LSB)
+-            P4_B    => direction_i, -- K1 pin 9 to L4 pin 4
+-            P5_C    => '0',         -- Preset bit C
+-            P6_D    => '1',         -- Preset bit D (MSB)
++            P3_A    => '0',         -- Candidate: presets 6 / 8
++            P4_B    => direction_n, -- Candidate: K1 pin 8
++            P5_C    => direction_n, -- Candidate: K1 pin 8
++            P6_D    => direction_i, -- Candidate: K1 pin 9
+             P7_CEP  => '1',         -- Parallel count enable
+             P10_CET => '1',         -- Trickle count enable
+             P9_LDn  => load_n,      -- J1 pin 3 to L4 pin 9
+diff --git a/testbench/tb_MovingHoleCircuit.vhd b/testbench/tb_MovingHoleCircuit.vhd
+--- a/testbench/tb_MovingHoleCircuit.vhd
++++ b/testbench/tb_MovingHoleCircuit.vhd
+@@ -1,11 +1,11 @@
+--- Figure 18 pin-netlist regression. Timing expectations follow the confirmed
+--- 9/11 presets, not the inconsistent numeric values in the manual prose.
++-- Experimental 6/8-preset regression for the 313-line raster.
++-- Uses the proposed wiring from docs/MOVING_HOLE_FIX_PROPOSAL.md.
+ library ieee;
+ use ieee.std_logic_1164.all;
+ use std.textio.all;
+ entity tb_MovingHoleCircuit is end;
+ architecture test of tb_MovingHoleCircuit is
+-    constant SCAN_LINES : integer := 313*400;
++    constant SCAN_LINES : integer := 313*1000;
+     signal hs_n : std_logic := '0';
+     signal start_n : std_logic := '0';
+     signal boundary_n : std_logic := '1';
+@@ -30,6 +30,8 @@
+         file trace : text open write_mode is "moving_hole_trace.csv";
+         variable row : line;
+         variable width, previous_rise, rise_count : integer := 0;
++        variable last_position, position, delta, last_delta : integer := 0;
++        variable top_turns, bottom_turns, frame_width : integer := 0;
+         variable previous_hole : std_logic := '0';
+         procedure tick is
+         begin
+@@ -79,31 +81,31 @@
+         expect_first_pulse;
+         assert windows='1' and windows_n='0'
+             report "Figure 19 must accept positive HOLE on the right" severity failure;
+-        -- Sample bottom boundary (V128=1), choosing preset 11.
++        -- Sample bottom boundary (V128=1), choosing preset 8.
+         v128<='1'; wait for 2 ns; boundary_n<='0'; wait for 2 ns;
+         boundary_n<='1'; wait for 2 ns;
+         finish_pulse;
+         assert windows='0' report "Right opening remained asserted" severity failure;
+-        next_pulse(309);
+-        -- Sample top boundary (V128=0), choosing preset 9.
++        next_pulse(312);
++        -- Sample top boundary (V128=0), choosing preset 6.
+         v128<='0'; wait for 2 ns; boundary_n<='0'; wait for 2 ns;
+         boundary_n<='1'; wait for 2 ns;
+         finish_pulse;
+         -- Boundary while HOLE is absent must not change K1.
+         v128<='1'; wait for 2 ns; boundary_n<='0'; wait for 2 ns;
+         boundary_n<='1'; wait for 2 ns;
+-        next_pulse(311);
++        next_pulse(314);
+         -- Reset during a pulse; counters reset, K1 direction remains intact.
+         reset;
+         expect_first_pulse;
+         finish_pulse;
+-        next_pulse(311);
++        next_pulse(314);
+         v128<='1'; wait for 2 ns; boundary_n<='0'; wait for 2 ns;
+         boundary_n<='1'; wait for 2 ns;
+         reset;
+         expect_first_pulse;
+         finish_pulse;
+-        next_pulse(309);
++        next_pulse(312);
+ 
+         -- Figure 19 mode/attract gating, independent of moving-hole phase.
+         one_player<='0'; v64<='0'; wait for 2 ns;
+@@ -118,11 +120,13 @@
+         assert windows='0' report "Attract must suppress openings" severity failure;
+         attract<='0'; h256n<='0';
+ 
+-        -- Long scan: 400 PAL fields, including boundary sampling. Export actual
++        -- Long scan: 1000 fields, including boundary sampling. Export actual
+         -- DUT signal samples for a diagnostic animation, not an invented path.
+         reset;
+         write(row, string'("frame,line,hole")); writeline(trace,row);
+         for n in 0 to SCAN_LINES-1 loop
++            -- V and boundary decode change before HSYNCn within the line,
++            -- as in the core (HRESET precedes the HSYNCn rising edge).
+             if (n mod 313)/128 mod 2=1 then v128<='1'; else v128<='0'; end if;
+             if (n mod 313>=80 and n mod 313<=83) or
+                (n mod 313>=240 and n mod 313<=243) then
+@@ -130,17 +134,41 @@
+             else boundary_n<='1'; end if;
+             tick;
+             if hole='1' then
++                frame_width:=frame_width+1;
+                 width:=width+1;
+                 if previous_hole='0' then
+                     if rise_count>0 then
+-                        assert n-previous_rise=309 or n-previous_rise=311
++                        assert n-previous_rise=312 or n-previous_rise=314
+                             report "Unexpected recurrence in long scan" severity failure;
+                     end if;
++                    position:=n mod 313;
++                    assert position>=80 and position+15<=243
++                        report "HOLE escaped playfield bounds" severity failure;
++                    if rise_count>0 then
++                        delta:=position-last_position;
++                        assert delta=1 or delta=-1
++                            report "HOLE jumped/wrapped rather than moving one line" severity failure;
++                        if last_delta=-1 and delta=1 then
++                            assert last_position=83 report "Top reversal at wrong line" severity failure;
++                            top_turns:=top_turns+1;
++                        elsif last_delta=1 and delta=-1 then
++                            assert last_position=224 report "Bottom reversal at wrong line" severity failure;
++                            bottom_turns:=bottom_turns+1;
++                        end if;
++                        last_delta:=delta;
++                    end if;
++                    last_position:=position;
+                     previous_rise:=n; rise_count:=rise_count+1;
+                 end if;
+             elsif previous_hole='1' then
+                 assert width=16 report "Long-scan pulse width is not 16" severity failure;
+                 width:=0;
++            end if;
++            if n mod 313=312 then
++                if n/313>=1 then
++                    assert frame_width=16 report "A complete frame lost the 16-line hole" severity failure;
++                end if;
++                frame_width:=0;
+             end if;
+             previous_hole:=hole;
+             assert windows=hole report "Right window polarity mismatch" severity failure;
+@@ -149,7 +177,11 @@
+             if hole='1' then write(row,1); else write(row,0); end if;
+             writeline(trace,row);
+         end loop;
+-        assert rise_count>390 report "Long scan did not exercise repeated pulses" severity failure;
++        assert top_turns>=3 and bottom_turns>=3
++            report "Did not verify three reversals at each boundary" severity failure;
++        report "Candidate bounded motion: top turns=" & integer'image(top_turns) &
++               " bottom turns=" & integer'image(bottom_turns);
++        assert rise_count>990 report "Long scan did not exercise repeated pulses" severity failure;
+         report "Moving-hole reset, width, presets, boundary gating, mode and long-scan tests passed";
+         wait;
+     end process;
+diff --git a/sim/run_moving_hole_tests.sh b/sim/run_moving_hole_tests.sh
+--- a/sim/run_moving_hole_tests.sh
++++ b/sim/run_moving_hole_tests.sh
+@@ -12,7 +12,7 @@
+ for tb in tb_IC9316 tb_LS74 tb_LS107 tb_LS107_master_slave tb_MovingHoleCircuit; do
+     ghdl -a --std=93 "$ROOT/testbench/$tb.vhd"
+     STOP=1us
+-    if [ "$tb" = tb_MovingHoleCircuit ]; then STOP=3ms; fi
++    if [ "$tb" = tb_MovingHoleCircuit ]; then STOP=7ms; fi
+     ghdl -r --std=93 "$tb" --assert-level=error --stop-time="$STOP"
+ done
+ python3 "$ROOT/sim/visualize_moving_hole.py" moving_hole_trace.csv "$ROOT/sim"
+diff --git a/sim/visualize_moving_hole.py b/sim/visualize_moving_hole.py
+--- a/sim/visualize_moving_hole.py
++++ b/sim/visualize_moving_hole.py
+@@ -17,7 +17,7 @@
+     chart = Image.new("RGB", (fields * 2 + 80, 313 * 2 + 65), "#171717")
+     chart.paste(trace.resize((fields * 2, 626), getattr(Image, "Resampling", Image).NEAREST), (60, 35))
+     draw = ImageDraw.Draw(chart)
+-    draw.text((12, 10), "Figure 18: actual HOLE samples (9/11 presets, 313 lines/frame)", fill="white")
++    draw.text((12, 10), "Figure 18: actual HOLE samples (CANDIDATE 6/8 presets, 313 lines/frame)", fill="white")
+     for line in (0, 80, 128, 240, 312):
+         y = 35 + line * 2
+         draw.text((22, y), str(line), fill="white")

@@ -1,0 +1,84 @@
+diff --git a/atari_wcc.vhd b/atari_wcc.vhd
+--- a/atari_wcc.vhd
++++ b/atari_wcc.vhd
+@@ -5,6 +5,7 @@
+ library IEEE;
+ use IEEE.STD_LOGIC_1164.ALL;
+ use IEEE.NUMERIC_STD.ALL;
++use STD.TEXTIO.ALL;
+ 
+ entity atari_wcc is
+     Generic (
+@@ -409,6 +410,26 @@
+ 	end if;
+ end process;
+ 
++-- Simulation-only observation of the actual core raster and opening.
++hole_trace: process
++    file output : text open write_mode is "moving_hole_full_trace.csv";
++    variable row : line;
++    variable v : std_logic_vector(8 downto 0);
++begin
++    write(row, string'("time_10ns,line,hole,attract")); writeline(output,row);
++    loop
++        wait until rising_edge(hsyncn_i);
++        wait for 1 ns;
++        v := v256_i & v128_i & v64_i & v32_i & v16_i & v8_i & v4_i & v2_i & v1_i;
++        write(row, now / 10 ns); write(row, string'(","));
++        write(row, to_integer(unsigned(v))); write(row, string'(","));
++        if hole_i='1' then write(row,1); else write(row,0); end if;
++        write(row, string'(","));
++        if atrc_i='1' then write(row,1); else write(row,0); end if;
++        writeline(output,row);
++    end loop;
++end process;
++
+ -- Moving Hole circuit
+ U_MOVING_HOLE: entity work.MovingHoleCircuit
+     port map (
+diff --git a/testbench/tb_atari_wcc.vhd b/testbench/tb_atari_wcc.vhd
+--- a/testbench/tb_atari_wcc.vhd
++++ b/testbench/tb_atari_wcc.vhd
+@@ -3,11 +3,11 @@
+ use IEEE.NUMERIC_STD.ALL;
+ use STD.TEXTIO.ALL;
+ 
+-entity tb_atari_wcc is
++entity tb_moving_hole_video is
+     generic (ONE_PLAYER_MODE : STD_LOGIC := '0'; SPINNER_TEST : boolean := false; SPI_TEST : boolean := false);
+-end tb_atari_wcc;
+-
+-architecture Behavioral of tb_atari_wcc is
++end tb_moving_hole_video;
++
++architecture Behavioral of tb_moving_hole_video is
+ 
+ -- Match board PLL: 50 MHz * 2/7 = 14.285714 MHz (70 ns period).
+ constant CLK_HALF : time := 35 ns;
+@@ -112,7 +112,7 @@
+ 
+ -- Device under test
+ DUT: entity work.atari_wcc
+-    generic map(GAME_CLOCKS=>2142857, SERVE_DELAY_CLOCKS=>357143,
++    generic map(GAME_CLOCKS=>71428571, SERVE_DELAY_CLOCKS=>357143,
+         SOLID_DEF_PLAY_GAP=>85-28*boolean'pos(SPI_TEST),
+         CHECKS_DEF_PLAY_GAP=>83-28*boolean'pos(SPI_TEST)) -- 300 ms game, 50 ms serve
+ 	port map(
+@@ -150,6 +150,8 @@
+     assert attract='0' and serve='0' report "paid start / serve delay failed" severity failure;
+     wait for 100 ms;
+     assert attract='0' and served_in_play report "real serve circuit did not release ball" severity failure;
++    report "Long moving-hole video: paid play established";
++    wait;
+     wait for 250 ms;
+     assert attract='1' and credit='0' and audio_o='1'
+         report "time expiry must restore silent attract and exhaust credit" severity failure;
+@@ -177,7 +179,7 @@
+ 	if vsync_o = '0' and vsync_prev = '1' then
+ 		frame_count <= frame_count + 1;
+ 		-- Capture every frame (odd and even) to get all positions
+-		capture_en <= true;
++		capture_en <= ((frame_count+1) mod 4=0);
+ 	end if;
+ 	vsync_prev <= vsync_o;
+ end process;

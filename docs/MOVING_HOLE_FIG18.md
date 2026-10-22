@@ -54,6 +54,10 @@ counter changes or timing corrections have been invented to conceal this.
 Further source clarification is needed before changing the wiring to reproduce
 that description. The long diagnostic explicitly includes wraparound.
 
+A separately tested [6/8-preset proposal](MOVING_HOLE_FIX_PROPOSAL.md) follows
+the manual's stated reversal behavior. It remains an explicit drawing
+deviation awaiting a project decision; the production circuit is unchanged.
+
 ## Running verification
 
 ```bash
