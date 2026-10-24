@@ -83,6 +83,34 @@ The AS script backed up the previous flash and completed Program + Verify with
 0 errors. Backup and programming log:
 `output_files/as_program/20261024-142024-8n63496c/`.
 
+On 24 October the owner confirmed that this programmed silent diagnostic build
+was working correctly, including catching and kicking, and requested restoration
+of normal LED behavior and sound. This is hardware confirmation for the silent
+POF hash above. No catch-logic correction was made during this investigation;
+the reason the earlier reported image did not catch remains unproven. Keep the
+confirmed-working silent artifacts available when comparing subsequent fits.
+
+### Normal build restored — 24 October 2026
+
+At the owner's request, the normal project was rebuilt and programmed with
+sound connected and the original LED behavior. Neither `CatchStatusLED` nor the
+temporary mute is present in the normal project. The optional diagnostic
+preparer remains available for future investigations.
+
+The normal POF SHA-256 is
+`ec7a7f908857e794875edf9d67ecea1ab8890999caade4ff3ed53ed4b08606b4`.
+The exact sources, SOF/POF and build/timing evidence are retained under
+`output_files/normal_restored/`. Quartus completed with 0 errors and 165 warnings;
+ball/score routing and slow/fast setup/hold guards passed. Sound tests and the
+full `sim/run_sim.sh` passed. Raw video samples are identical to the verified LED
+diagnostic capture; the final PNG and six GIF keyframes were inspected.
+
+The AS script backed up flash, programmed the archived normal POF and verified
+it successfully. Logs and backup:
+`output_files/as_program/20261024-144446-3np2v2vd/`.
+Physical catch/kick and sound confirmation for this new fit remains pending;
+the owner's preceding confirmation applies to the silent diagnostic image.
+
 ## Evidence and limits
 
 - `bash sim/run_catch_timeout_tests.sh` passes both checked-pattern parities,
