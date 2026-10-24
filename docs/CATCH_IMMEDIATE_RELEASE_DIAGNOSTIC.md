@@ -108,8 +108,9 @@ diagnostic capture; the final PNG and six GIF keyframes were inspected.
 The AS script backed up flash, programmed the archived normal POF and verified
 it successfully. Logs and backup:
 `output_files/as_program/20261024-144446-3np2v2vd/`.
-Physical catch/kick and sound confirmation for this new fit remains pending;
-the owner's preceding confirmation applies to the silent diagnostic image.
+The owner subsequently reported that catch/kick fails on this normal image.
+The preceding successful hardware confirmation applies only to the silent
+diagnostic image, not this normal fit.
 
 ## Evidence and limits
 
@@ -154,3 +155,29 @@ used `-m AS` and recognized the diagnostic POF as EPCS4 with checksum `0x072B26A
 No successful flash programming or verification is claimed. The programming log
 is `output_files/catch_debug/as_program.log`; no backup was obtained by the
 failed examine attempt.
+
+## Normal-versus-silent regression comparison (24 October 2026)
+
+The owner confirmed that only the silent diagnostic was tested successfully.
+Comparison of its saved sources against the normal sources finds identical
+catch/kick logic. The differences are the diagnostic LED instance, its QSF
+source entry, and the board audio output held high instead of connected to
+SOUND_OUT. These changes also alter synthesis and placement/routing; neither
+a sound fault nor a particular catch timing fault has been established.
+
+The automated pipeline independently reproduced the failing normal POF hash
+`ec7a7f908857e794875edf9d67ecea1ab8890999caade4ff3ed53ed4b08606b4`
+and passed its current checks. Those checks therefore do not cover this fault.
+A repeated controlled fitted probe on that exact normal fit retained STOP.
+The same probe on the silent fit produced unknowns and timing warnings, so
+it is inconclusive and cannot establish why that image works physically.
+Temporary probe files are under `/tmp/wcc-catch-compare/`.
+
+The next hardware comparison uses the saved audible LED diagnostic POF
+`54b6387520f11dfeeb0e04fde3f077bfbe623515081f8c56e2bb408d962fe2fd`.
+It restores sound while retaining LED observation. This is an isolation test,
+not a verified permanent fix. The known-working silent POF remains preserved.
+
+AS programming and flash verification of this audible diagnostic succeeded.
+Backup and logs: `output_files/as_program/20261024-212923-votax71z/`.
+Power-cycle and physical catch/kick observations are pending.
