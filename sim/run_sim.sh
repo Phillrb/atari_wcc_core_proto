@@ -90,6 +90,7 @@ ghdl -a --std=93 "$ROOT/CreditCircuit.vhd"
 ghdl -a --std=93 "$ROOT/ElectronicLatchCircuit.vhd"
 ghdl -a --std=93 "$ROOT/StartCircuit.vhd"
 ghdl -a --std=93 "$ROOT/GameSelectCircuit.vhd"
+ghdl -a --std=93 "$ROOT/sim/CatchStatusLED.vhd"
 ghdl -a --std=93 "$ROOT/atari_wcc.vhd"
 
 # Figure 21 BCD rollover, carries and captured score video.

@@ -32,6 +32,7 @@ entity atari_wcc_board is
 		VideoW_O   : out STD_LOGIC;
 		VideoB_O   : out STD_LOGIC;
 		LED0       : out STD_LOGIC;
+        CreditLEDn : out STD_LOGIC := '1'; -- active-low credit lamp, FPGA pin 7
 		Audio1_O   : out STD_LOGIC; -- Sprint2 audio connector, FPGA pin 71
 		Clock_out  : out STD_LOGIC
 	);
@@ -90,6 +91,7 @@ begin
 				KickSolids_I=>KickSolids_I,
             ATTRACT_DBG=>open,
 				CREDIT_DBG=>open,
+                CREDIT_LEDn=>CreditLEDn,
 				START_DBG=>open,
 				SERVE_DBG=>open,
 			CLOCK_14   => clock_14,

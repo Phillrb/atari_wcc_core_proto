@@ -22,6 +22,7 @@ entity CreditCircuit is
 		LATCH_PRESETn   : in  STD_LOGIC;          -- from Latch; low = preset A9-9/8 (power-on)
 		CREDIT          : out STD_LOGIC;          -- high = credit established (can start)
 		COIN_ACCEPTED_PULSE : out STD_LOGIC;      -- active high when C8-8 goes low (to Latch)
+		CREDIT_LEDn     : out STD_LOGIC := '1'; -- A8 pin 8, low lights credit LED
 		CREDIT_EXPIRED  : out STD_LOGIC           -- A9-9/8 Q high (to Latch)
 	);
 end CreditCircuit;
@@ -119,6 +120,10 @@ begin
 
 	CREDIT <= C9_13_out;
 
-	-- A8-8 (LS04): inverts for credit LED; we output CREDIT (high = light on) directly
-	-- LED drive would be A8-8 output = not C9_13_out; not needed as separate port
+	-- Figure 8: A9 pin 8 (Qn) -> A8 pin 9; A8 pin 8 sinks the LED
+    -- through R31. This is independent of C9's coin-contact start gating.
+    U_A8_CREDIT_LED: entity work.LS04 port map(
+        P9_A4=>A9_9_8_Qn, P8_Y4=>CREDIT_LEDn,
+        P2_Y1=>open, P4_Y2=>open, P6_Y3=>open,
+        P10_Y5=>open, P12_Y6=>open);
 end Structural;

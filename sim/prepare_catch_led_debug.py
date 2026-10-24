@@ -22,7 +22,7 @@ for name in sources + ["atari_wcc.qpf", "sim/CatchStatusLED.vhd"]:
 core = dest / "atari_wcc.vhd"
 text = core.read_text()
 old = "LED0      <= not PushBtn;"
-assert text.count(old) == 1, "Core LED assignment changed; inspect before preparing diagnostic"
+assert text.count(old) == 1 or "U_CATCH_STATUS_LED: entity work.CatchStatusLED" in text, "Core LED assignment changed; inspect before preparing diagnostic"
 text = text.replace(old, """-- Isolated diagnostic: mode switch selects the LED observation.
 U_CATCH_STATUS_LED: entity work.CatchStatusLED
     port map(ONE_PLAYER=>selected_one_player_i,
@@ -39,5 +39,7 @@ if args.mute_sound:
     assert text.count(old) == 1, "Board output assignments changed; inspect before muting"
     text = text.replace(old, old + "\n    -- Temporary debug mute: constant idle level at the board audio pin.\n    Audio1_O <= '1';")
     board.write_text(text)
-(dest / "atari_wcc.qsf").write_text(qsf + "\nset_global_assignment -name VHDL_FILE sim/CatchStatusLED.vhd\n")
+if "set_global_assignment -name VHDL_FILE sim/CatchStatusLED.vhd" not in qsf:
+    qsf += "\nset_global_assignment -name VHDL_FILE sim/CatchStatusLED.vhd\n"
+(dest / "atari_wcc.qsf").write_text(qsf)
 print(dest)

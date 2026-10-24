@@ -27,6 +27,7 @@ entity atari_wcc is
 		KickSolids_I : in STD_LOGIC := '1';
         ATTRACT_DBG : out STD_LOGIC;
         CREDIT_DBG : out STD_LOGIC;
+        CREDIT_LEDn : out STD_LOGIC := '1';
         START_DBG : out STD_LOGIC;
         SERVE_DBG : out STD_LOGIC;
 		CLOCK_14    : in  STD_LOGIC; -- Board PLL clock (14.285714 MHz); nominal schematic clock 14.318180 MHz
@@ -378,7 +379,7 @@ U_START_INPUT: entity work.JammaSwitchAdapter
 U_CREDIT: entity work.CreditCircuit
     port map(CLOCK_7=>clk7, COIN_SWITCH=>coin_pressed, ONE_PLAYER=>'1',
         V32=>v32_i, V256=>v256_i, ATRC=>atrc_i, LATCH_PRESETn=>latch_presetn_i,
-        CREDIT=>credit_i, COIN_ACCEPTED_PULSE=>coin_accepted_i, CREDIT_EXPIRED=>credit_expired_i);
+        CREDIT=>credit_i, CREDIT_LEDn=>CREDIT_LEDn, COIN_ACCEPTED_PULSE=>coin_accepted_i, CREDIT_EXPIRED=>credit_expired_i);
 U_LATCH: entity work.ElectronicLatchCircuit
     port map(CLOCK_7=>clk7, COIN_ACCEPTED_PULSE=>coin_accepted_i,
         STATIC=>'0', CREDIT_EXPIRED=>credit_expired_i, LATCH_PRESETn=>latch_presetn_i);
@@ -629,7 +630,13 @@ CLOCK_7_DBG <= clk7;
 HBLANK_DBG  <= hblank_i;
 
 -- Board / debug
-LED0      <= not PushBtn;
+-- Catch diagnostic retained from hardware-confirmed image.
+-- Mode switch selects kick-button or STOP observation.
+U_CATCH_STATUS_LED: entity work.CatchStatusLED
+    port map(ONE_PLAYER=>selected_one_player_i,
+        SOLID_KICK=>solid_kick_pressed, CHECKED_KICK=>check_kick_pressed,
+        STOPn=>stopn_i, LEDn=>LED0);
+
 Clock_out <= clk7;
 
 end Behavioral;
