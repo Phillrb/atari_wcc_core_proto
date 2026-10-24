@@ -57,6 +57,32 @@ video evidence are retained in `output_files/catch_debug/`, including
 `sources.zip`. This snapshot includes the pre-existing repository cleanup
 changes; those changes are not part of the diagnostic source commit.
 
+### Temporary silent variant
+
+Pass `--mute-sound` when preparing a separate diagnostic source tree:
+
+```bash
+python3 sim/prepare_catch_led_debug.py /tmp/wcc-catch-led-silent --mute-sound
+```
+
+This disconnects the core's audio output from the board pin and holds `Audio1_O`
+(pin 71) at its normal silent idle level, high. The core and LED diagnostic are
+unchanged. Omitting the option creates the original audible diagnostic; normal
+project sources are never muted by the preparer. The silent artifacts use the
+name `output_files/atari_wcc_catch_debug_silent.{sof,pof}`.
+
+Built and programmed on 24 October 2026. Quartus compile: 0 errors, 166 warnings.
+LED assertions and ball/score routing and slow/fast timing guards passed. The
+fitted audio output is driven directly by VCC; the generated game core is
+byte-identical to the previously video-verified LED diagnostic core. Sources
+and build/check logs are saved in `output_files/catch_debug_silent/`.
+
+Silent POF SHA-256:
+`089bc1d9c95ebcd97b9e546c10e99fb665432df594a85a8b7afafff3a6eec2b9`.
+The AS script backed up the previous flash and completed Program + Verify with
+0 errors. Backup and programming log:
+`output_files/as_program/20261024-142024-8n63496c/`.
+
 ## Evidence and limits
 
 - `bash sim/run_catch_timeout_tests.sh` passes both checked-pattern parities,
