@@ -39,4 +39,10 @@ foreach {counter gate} {K3 P3_Y1 L3 P11_Y4} {
     # Its falling edge clocks the N2 tens flip-flop (20% duty cycle).
     create_generated_clock -name SCORE_${counter}_Q3 -source $q0_pin -edges {8 10 18} $q3_pin
 }
+# Figure 15 event clock: conservative one-pixel high/low envelope.
+# Checks B6 local feedback only; does not prove the upstream catch latch
+# and score-sound merge free from glitches or all cross-domain transfers.
+set speed_pin [get_pins {U_CORE|U_HORIZ_SPEED|F6|P8_Y3|combout}]
+if {[get_collection_size $speed_pin] != 1} {error "Missing Figure 15 speed clock"}
+create_clock -name SPEED_HIT -period 280.000 -waveform {0.000 140.000} $speed_pin
 derive_clock_uncertainty

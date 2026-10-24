@@ -524,7 +524,7 @@ U_HORIZ_SPEED: entity work.HorizontalDirectionAndSpeed
 		SCORE_SOUNDn   => score_sound_n_i,
 		ONE_PLAYER     => one_player_i,
 		ATRC           => atrc_i,
-		GOALIE_FWD_HIT => '1',
+		GOALIE_FWD_HIT => catch_trigger_i, -- Figure 13 D8 pin 9 -> Figure 15 F6 pin 10
 		HSPEED         => hspeed_i,
 		SLOW           => slow_i
 	);
