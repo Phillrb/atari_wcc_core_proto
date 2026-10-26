@@ -5,6 +5,11 @@ owner observations. The [work queue](IMPLEMENTATION_PLAN.md) lists the next step
 
 ## Current build and hardware evidence
 
+- On 26 October 2026, the project owner confirmed that one-player mode should
+  be reported as complete. This records functional acceptance of the mode;
+  no new image hash, detailed sweep measurements or timing-closure evidence
+  accompanied that confirmation. Remaining specific checks below are separate.
+
 - Acceleration is connected and the Figure 15 decoder is corrected. The 24 October
   run `output_files/build_runs/20261024T205243Z-l_3p021s/` passed all 15 stages,
   including ball/score/speed routing and local timing, focused regressions and

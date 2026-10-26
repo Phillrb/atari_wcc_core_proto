@@ -9,6 +9,9 @@ groups are integrated. The formerly disconnected speed increment input is now in
 priorities are build-sensitive catch reliability, hardware validation and fidelity. See [verification status](VERIFICATION_STATUS.md)
 for the distinction between RTL tests, existing fitted reports and hardware reports.
 
+One-player mode is complete per project-owner confirmation on 26 October 2026.
+The verification and fidelity tasks below remain separate from functional completion.
+
 ## Ordered work queue
 
 ### 1. Repository consolidation

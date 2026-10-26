@@ -19,10 +19,11 @@ This project is a VHDL recreation of the classic 1974 discrete logic arcade game
 
 See [AGENTS.md](AGENTS.md) for the full circuit-by-circuit breakdown.
 
-### One-player status and remaining verification
+### One-player mode — complete
 
-One-player mode is **work in progress**. Simulation now shows the required solid
-left goalie and two solid forwards, with no solid defenders or checked players.
+One-player mode is **complete**, as confirmed by the project owner on
+26 October 2026. It provides the solid left goalie and two solid forwards,
+with no solid defenders or checked players, and the moving goal opening.
 The missing Figure 11 player-window mode connection has been corrected and
 regression-tested; the default two-player paid-play screenshot is unchanged.
 
@@ -47,9 +48,9 @@ TEST signal to this port. Selection is debounced for 5 ms; attract always uses
 two-player mode through Figure 10 C5 gating. A momentary switch selects one
 player only while held; use a maintained switch for persistent selection.
 The checked-in board wrapper assigns `GameSelect_I` to FPGA pin 41 with a pull-up.
-The moving-hole correction is verified by the long RTL fixture. A successful local
-22 October Quartus fit is available, but specific fitted timing coverage and
-commit/hash-linked hardware sweep results remain open; see the
+The owner's completion confirmation is recorded separately from the long RTL
+fixture and fitted timing evidence. Detailed timing coverage and image-linked
+sweep measurements remain verification tasks, not missing one-player features; see the
 [verification record](docs/VERIFICATION_STATUS.md).
 
 See the [historical one-player handoff](docs/ONE_PLAYER_HANDOFF.md)

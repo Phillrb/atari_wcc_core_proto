@@ -236,6 +236,8 @@ These bugs were discovered during simulation bring-up. Be aware of them when wri
 
 ## Circuit Implementation Plan
 
+**One-player mode is complete:** project-owner confirmation, 26 October 2026. Remaining timing and fidelity audits do not mean the mode is functionally unfinished. See [verification record](docs/VERIFICATION_STATUS.md).
+
 **Current priorities and verification:** [work queue](docs/IMPLEMENTATION_PLAN.md) and [verification record](docs/VERIFICATION_STATUS.md). Acceleration and the credit lamp are implemented; latest-image hardware confirmation and timing coverage remain incomplete. See docs/HIT_ACCELERATION.md and docs/CREDIT_LED.md. The audible diagnostic image has owner-confirmed catching/kicking; the underlying build-sensitive fault remains unresolved.
 
 The Goal IV game consists of the following integrated circuit groups. Each references a figure from TM-035 and has a schematic diagram in `diagrams/`.
