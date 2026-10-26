@@ -1,5 +1,7 @@
 # Catch and horizontal STOP investigation
 
+> Historical STOP investigation. The approved preset is retained, and subsequent collision/catch repairs are documented in [collision timing](COLLISION_TIMING_HANDOFF.md), [vertical timing](VERTICAL_BALL_TIMING.md), [catch timeout](CATCH_TIMEOUT.md) and [rear catch timeout](REAR_CATCH_TIMEOUT.md). Statements below about deferred tests or unresolved BLIP describe that earlier stage. Horizontal acceleration remains open in the [current queue](IMPLEMENTATION_PLAN.md).
+
 ## Approved correction — 18 October 2026
 
 The project owner approved adapting B5 to the measured raster. In
@@ -85,5 +87,6 @@ This finding does not by itself settle the original board's edge timing.
 
 There are also separate concerns in the current player-window BLIP timing and
 zero-delay collision hazards (see `DEFENDER_HIT_HAZARD.md`), and the horizontal
-speed increment input remains tied high in `atari_wcc.vhd`. Those are not fixed
+speed increment input was tied high at the time of this diagnosis (now implemented;
+see [hit acceleration](HIT_ACCELERATION.md)). Those issues were not fixed
 by changing a STOP preset and should not be conflated with this isolated result.

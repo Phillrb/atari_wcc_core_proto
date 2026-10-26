@@ -2,9 +2,8 @@
 
 This project is a VHDL recreation of the classic 1974 discrete logic arcade game known as 'World Cup', 'World Cup Football', 'Coupe du Monde' or 'Goal IV' by Atari. The original PCB is marked 'WCC' and was assigned the working ID 'TM-035'.
 
-> **Status: Running in simulation and on FPGA hardware; video output and goal counting tested successfully. Sound implemented and simulation-tested.**
-> Quartus synthesis and fitting have passed for the Cyclone II EP2C5T144C8 board. The project owner confirmed on 24 September 2026 that the hardware video output looks good. GHDL simulation and the Python visualizer remain available for development. Full game integration is still in progress; this hardware check validates the displayed output, not every gameplay function.
-> On 18 October 2026, the project owner confirmed that goal counting now works properly on the FPGA following the score rollover correction. See [score timing and verification](docs/SCORE_ROLLOVER_TIMING.md).
+> **Status, 26 October 2026: all major gameplay circuits integrated; latest hardware verification remains open.**
+> Hit-driven acceleration and the pin-7 credit lamp are implemented. The latest acceleration build passed 15 automated stages and flash verification; physical confirmation of that image is pending. The build-sensitive catch fault and incomplete FPGA timing coverage remain open. See the [prioritized next steps](docs/IMPLEMENTATION_PLAN.md) and [verification record](docs/VERIFICATION_STATUS.md).
 
 ## Current Implementation Status
 
@@ -13,9 +12,9 @@ This project is a VHDL recreation of the classic 1974 discrete logic arcade game
 | Phase 0 | Foundation: clock, H/V sync, sync summing | **Done** |
 | Phase 1 | Playfield circuit (Fig 9) | **Done** |
 | Phase 2 | Game control: electronic latch, credit, start, game select, time line, serve timing | Coin/start, attract, two-minute timer and serve integrated and simulation-tested; runtime one-/two-player selection (board defaults to two-player); analogue models remain |
-| Phase 3 | Ball system: motion, direction & speed, catch/kick, window/miss/bounce | **Done** |
-| Phase 4 | Players: all forwards, defense/goalie (solid + striped), ramp, mux, summing | **Done** |
-| Phase 5 | Score circuit, sound circuit, moving hole | Score circuit implemented and integrated; **goal counting FPGA-tested and confirmed working on 18 October 2026** (see [verification](docs/SCORE_ROLLOVER_TIMING.md)); sound (Fig 20) implemented, integrated and simulation-tested; **moving-hole reversal (Fig 18) corrected and simulation-tested on 22 October 2026; FPGA fit and hardware verification pending** (see [notes](docs/MOVING_HOLE_FIG18.md)) |
+| Phase 3 | Ball system: motion, direction & speed, catch/kick, window/miss/bounce | Integrated; hit-driven acceleration and Figure 15 decoder corrections pass RTL and local fitted timing checks. Latest-image hardware confirmation remains pending |
+| Phase 4 | Players: all forwards, defense/goalie (solid + striped), ramp, mux, summing | Integrated; player spacing and analog-model fidelity remain audit items |
+| Phase 5 | Score circuit, sound circuit, moving hole | Score circuit implemented and integrated; **goal counting FPGA-tested and confirmed working on 18 October 2026** (see [verification](docs/SCORE_ROLLOVER_TIMING.md)); sound (Fig 20) implemented, integrated and simulation-tested; **moving-hole reversal (Fig 18) corrected and simulation-tested on 22 October 2026; specific fitted timing and commit/hash-linked hardware verification remain open** (see [notes](docs/MOVING_HOLE_FIG18.md)) |
 | Phase 6 | Video output and board integration | Board wrapper, PLL and composite output integrated; synthesis/fitting passed and hardware video tested. Original Fig 22 resistor network recreation remains outstanding |
 
 See [AGENTS.md](AGENTS.md) for the full circuit-by-circuit breakdown.
@@ -47,11 +46,11 @@ wrapper: low selects one player, high selects two players. Connect the JAMMA
 TEST signal to this port. Selection is debounced for 5 ms; attract always uses
 two-player mode through Figure 10 C5 gating. A momentary switch selects one
 player only while held; use a maintained switch for persistent selection.
-The physical FPGA pin assignment belongs to the JAMMA wrapper.
-The recent moving-hole and one-player changes have
-been verified in simulation, but have not yet been validated by Quartus
-synthesis/fitting or on FPGA hardware; earlier hardware results below apply to
-previous revisions.
+The checked-in board wrapper assigns `GameSelect_I` to FPGA pin 41 with a pull-up.
+The moving-hole correction is verified by the long RTL fixture. A successful local
+22 October Quartus fit is available, but specific fitted timing coverage and
+commit/hash-linked hardware sweep results remain open; see the
+[verification record](docs/VERIFICATION_STATUS.md).
 
 See the [historical one-player handoff](docs/ONE_PLAYER_HANDOFF.md)
 and [Figure 18 wiring and timing notes](docs/MOVING_HOLE_FIG18.md).
@@ -75,6 +74,17 @@ The design mirrors how the original 1970s hardware would work: discrete 74LS-ser
 - Quartus II version 13.0.1 Service Pack 1 for synthesis.
 - **GHDL** 0.37+ (mcode or LLVM backend) for simulation.
 - **Python 3** with `Pillow` for image generation and optional `pygame` for interactive display.
+
+## Routine build and programming
+
+Use `./scripts/build_and_test.py` for an isolated build, routing/timing guards,
+regressions and video capture. Review its summary and images, then use
+`./scripts/program_as.py <exact-run-image.pof>` when programming is requested.
+See [build automation](docs/BUILD_AND_TEST.md) and [Active Serial programming](docs/ACTIVE_SERIAL_PROGRAMMING.md).
+
+LED0 on pin 3 retains the catch diagnostic: either kick button in one-player
+mode, STOP in two-player mode. Pin 7 drives the active-low Figure 8 credit lamp.
+Sound remains enabled. See [credit LED](docs/CREDIT_LED.md).
 
 ## Running the Simulation
 
@@ -101,7 +111,7 @@ For VCD waveform debugging, add `--vcd=atari_wcc.vcd` to the GHDL run command in
 Moving-hole regression tests can be run from the repository root with
 `bash sim/run_moving_hole_tests.sh`. They cover the IC models, preset periods,
 boundary reversal and mode selection, including a comparison of raw and sampled
-playfield boundaries. The suite generates `sim/moving_hole_timing.png` / `.gif`
+playfield boundaries. The suite generates `sim/moving_hole_timing.png`, `sim/moving_hole.gif`,
 and `sim/moving_hole_raster.png` / `.gif`.
 
 Sound regression tests can be run from the repository root with `bash sim/run_sound_tests.sh`. See [Figure 20 sound circuit notes](docs/SOUND_CIRCUIT_FIG20.md) for coverage and timing estimates.
@@ -116,9 +126,9 @@ quartus_sh --flow compile atari_wcc
 
 The board's 50 MHz oscillator feeds a PLL configured for **14.285714 MHz** (multiply 2, divide 7), giving a **7.142857 MHz** pixel clock. This is approximately 0.2268% slower than the original 14.318180 MHz master clock; the simulation testbench uses the same 70 ns period as the board configuration.
 
-The wrapper uses the Sprint2/MaSTer composite-video connections and an external resistor network. Synthesis and fitting passed on 23 September 2026, using 764 of 4,608 logic elements. Hardware video was subsequently tested and reported to look good. Remaining timing-constraint warnings still require review; the visual test does not establish full timing closure.
+The wrapper uses the Sprint2/MaSTer composite-video connections and an external resistor network. The latest recorded acceleration build (24 October) uses **3,113/4,608 logic elements (68%)** and 619 registers. Ball, score and B6 speed routing/setup/hold checks pass. Whole-design timing remains incomplete; the 22 October report's 32 unconstrained clocks is a historical count, not a fresh inventory of this image. See [current verification](docs/VERIFICATION_STATUS.md).
 
-Sound output is connected to `Audio1_O` on **FPGA pin 71**. The sound-integrated build passes Quartus compilation and fitting, but TimeQuest reports timing violations and incomplete constraints; timing closure remains outstanding. Attract-mode muting is integrated and simulation-tested; a hardware listening test remains pending. M9 hit-sound timings remain adjustable estimates. See [sound implementation and validation](docs/SOUND_CIRCUIT_FIG20.md).
+Sound output is connected to `Audio1_O` on **FPGA pin 71**. Sound and attract muting are simulation-tested; M9 hit-sound timings remain adjustable estimates. A specific listening/calibration result should be recorded against the tested bitstream. See [sound implementation and validation](docs/SOUND_CIRCUIT_FIG20.md) and the [current verification record](docs/VERIFICATION_STATUS.md), which distinguishes current image hashes from historical provenance limits.
 
 See [board clock, pinout and build details](docs/MASTER_CLOCK_AND_VIDEO_ADOPTION.md).
 
@@ -128,11 +138,13 @@ Power-up enters silent attract mode with closed goals and fixed player positions
 
 The board uses Sprint2's `Coin1_I` on **pin 120** and `Start1_I` on **pin 112**, both normally-open switches to GND with FPGA weak pull-ups. A two-stage synchronizer and 5 ms debounce adapt these single-contact inputs to the original changeover-switch latch behavior. The game circuitry then qualifies the coin and generates START/ATRC through Figure 8's TTL logic.
 
-See [JAMMA input and game-control implementation](docs/JAMMA_GAME_CONTROL.md) for the schematic boundary, tests, snapshots and remaining limitations. The updated board build fits in 1,027 of 4,608 logic elements. Timing closure and physical coin/start testing remain outstanding.
+See [JAMMA input and game-control implementation](docs/JAMMA_GAME_CONTROL.md) for the schematic boundary and circuit tests. The owner reports playable hardware; record detailed coin/start and other board observations with the commit and bitstream hash as described in the [verification record](docs/VERIFICATION_STATUS.md).
 
 ## Documentation
 
-- [AGENTS.md](AGENTS.md) - Agent instructions, circuit implementation plan, style guide, and full project status
+- [Next steps](docs/IMPLEMENTATION_PLAN.md) - Prioritized work queue and remaining fidelity work
+- [Verification status](docs/VERIFICATION_STATUS.md) - RTL results, local fit reports and hardware evidence
+- [AGENTS.md](AGENTS.md) - Agent instructions, circuit inventory and style guide
 - [docs/](docs/) - Build documentation, timing analysis, and implementation notes
 
 ## Atari WCC PCB

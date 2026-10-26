@@ -1,5 +1,15 @@
 # Players Circuit (Figure 11) – Breakdown and Implementation Plan
 
+> Status clarification (26 October): all player groups are integrated. This file
+> retains historical implementation-planning notes below; use the current source
+> and [SPI controls](SPI_CONTROLS.md) for implemented timing and control behavior.
+> Horizontal windows currently start at H=152/200/248/296/344/392. Uniform
+> spacing and BLIP guards are adaptations requiring a fidelity audit. Restoring
+> the original decode in our current raster produces 168/200/264/296/360/392;
+> these are reconstruction results, **not verified original-machine positions**.
+> Audit counter sequencing/reset phase before changing the layout.
+
+
 The Players Circuit (TM-035 Figure 11) is described in the manual as a collection of sub-circuits. This document breaks them down for schematic-accurate VHDL implementation. The manual section starts at **Goal_IV_TM-035.md § "Players Circuit"** and the schematic is **diagrams/11_Players_Circuit.png**.
 
 ---

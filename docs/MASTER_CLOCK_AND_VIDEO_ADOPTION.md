@@ -15,10 +15,12 @@ These match the working `../MaSTer/Sprint2v1/sprint2/sprint2.qsf`, rather than t
 | VideoW_O | 86 | Core active-high video |
 | VideoB_O | 74 | Constant low |
 | Reset_I | 144 | Active-low board button, pull-up enabled |
-| LED0 | 3 | Core LED output |
+| LED0 | 3 | Active-low kick/STOP diagnostic |
+| CreditLEDn | 7 | Active-low Figure 8 credit indicator |
+| Audio1_O | 71 | Sound output |
 | Clock_out | 80 | 7.142857 MHz debug clock |
 
-Use the same external composite resistor network as Sprint2. No separate H/V sync pins are exposed by this wrapper. The board button retains the existing core button/LED behavior; it is not a new game reset implementation.
+Use the same external composite resistor network as Sprint2. No separate H/V sync pins are exposed by this wrapper. LED0 (pin 3) now reports kick presses in one-player mode and STOP in two-player mode. The credit LED is on pin 7; see [credit lamp](CREDIT_LED.md). The board button is not a new game-reset implementation.
 
 ## Simulation and verification
 

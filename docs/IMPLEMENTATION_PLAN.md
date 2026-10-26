@@ -1,145 +1,96 @@
-# Atari WCC (Goal IV) – Implementation Plan
+# Atari WCC — next steps
 
-This document is the single reference for **how to properly implement** the project: order of work, what to fix first, and how phases depend on each other. It aligns with AGENTS.md (TTL fidelity, manual as source of truth, incremental development, visual verification).
+Updated 26 October 2026 after acceleration, credit-LED and automation work. This is the current work queue;
+older diagnosis and handoff documents preserve historical evidence. Follow
+[AGENTS.md](../AGENTS.md) for implementation rules and TM-035 for circuit wiring.
 
----
+The owner reports that the game is working well and playable. All major circuit
+groups are integrated. The formerly disconnected speed increment input is now integrated. Remaining
+priorities are build-sensitive catch reliability, hardware validation and fidelity. See [verification status](VERIFICATION_STATUS.md)
+for the distinction between RTL tests, existing fitted reports and hardware reports.
 
-## Goal
+## Ordered work queue
 
-Faithfully recreate the Goal IV (World Cup) arcade game as a VHDL FPGA core: every logic path traceable to TM-035 schematics, using explicit 74-series (and other) IC instantiations. Output drives a CRT via the same clock/video stack as MaSTer (14.31818 MHz from PLL, composite out).
+### 1. Repository consolidation
 
----
+- [x] Replace the obsolete phase plan with this prioritized queue.
+- [x] Refresh README and agent-facing status, clock and ball-shape information.
+- [x] Archive the unused, invalid `IC/ControlsSPI.vhd` draft outside compiled sources.
+- [x] Ignore Quartus workspace state and remove `atari_wcc.qws` from version control,
+  retaining the local file.
+- [x] Remove unused `video_playfield` and `video_timeline` signals; their source
+  signals already feed the visible output through `ScoreCircuit`.
+- [x] Label superseded investigation notes and preserve source/diagnostic evidence.
+- [ ] Verify the cleanup with the full simulation, compare PNG/GIF to the review
+  baseline, and commit locally. Do not include the pre-existing QSF edit.
 
-## Principles
+### 2. Verify hit-driven horizontal acceleration on hardware
 
-1. **TTL fidelity** – No behavioural shortcuts for schematic-documented gates; use `entity work.LSxx` (or other ICs) everywhere the manual specifies an IC.
-2. **Manual + diagrams** – Goal_IV_TM-035.md and `diagrams/` are the source of truth. Unclear connections → ask.
-3. **Incremental** – One circuit (or one fix) at a time; simulate and inspect frame output before moving on.
-4. **Visual verification** – Any change that affects video: run `sim/run_sim.sh`, check `frame_output.png` (or GIF for animation).
-5. **Sim then board** – Simulation stays the primary verification; board build (atari_wcc_board + PLL) follows once the core is correct.
+Figure 13 D8 pin 9 now feeds Figure 15 F6/B6. The pin-number audit also
+corrected crossed counter/XOR inputs in the existing speed decoder. RTL tests
+cover ordered levels, saturation, presets, defender exclusion and STOP.
+See [the wiring and verification record](HIT_ACCELERATION.md).
 
----
+- Confirm catch/kick and progressive rally speed on the new FPGA image in
+  both game modes, including reset after goals.
+- Retain the fitted-event-clock and cross-domain timing limitations recorded
+  in the verification document; local B6 checks do not prove whole-design closure.
 
-## Phase 0: Foundation — DONE
+### 3. Resolve build-sensitive catching and complete timing coverage
 
-- Computer Clock, Horizontal Sync, Vertical Sync, Sync Summing are verified.
-- 455 clocks/line, 313 lines/frame, 50.27 Hz (PAL).
-- Top-level: atari_wcc (sim) / atari_wcc_board (board with PLL + MaSTer video).
+The owner confirmed catch/kick on the audible diagnostic image, but removing
+its LED connection produced a failing fit. Retaining the LED is not a root-cause
+fix. Establish a reproducer and check the collision/catch paths across fits.
 
-No action except to keep these as the base when adding or changing circuits.
 
----
+The local 22 October reports have positive slack for their reported constrained
+checks, but list 32 unconstrained clocks and unconstrained I/O. Successful fitting
+and playable hardware do not establish coverage of these paths.
 
-## Phase 1: Static Video — FIX BEFORE ADDING MORE
+- Inventory ripple/event clocks and clock crossings, starting with moving-hole
+  feedback, collision consumers and the restored speed counter.
+- Add justified constraints and focused slow/fast fitted tests. Do not silence
+  warnings with blanket false paths; document any legitimate exceptions.
+- Retain the existing ball, score and speed routing/setup/hold guards.
+- Record commit, local changes, tool version, SOF SHA-256 and hardware results
+  together. Recent builds preserve source snapshots, manifests and exact image hashes.
+  Physical results still need to be linked to each new image.
+- Exercise both modes, multiple moving-hole reversals, repeated scoring, catches
+  from both sides, kick/timeout, timer expiry, controls and sound on the board.
 
-**Objective:** Playfield (field outline, center line, goal openings) must be schematic-accurate and visually correct.
+### 4. Consolidate regression execution
 
-| Task | What | Priority |
-|------|------|----------|
-| 1.1 | **Review PlayfieldCircuit.vhd vs Fig 9** – Replace any behavioural position logic (e.g. `to_integer()` on H/V) with explicit ICs (M5, N5, N4, H6, J4, K4, C6 per schematic). | High |
-| 1.2 | Verify WINDOWS → goal openings (V 128..196) in sim; confirm reference rect and frame_output.png match docs. | High |
+- [x] Provide one documented entry point: `scripts/build_and_test.py` snapshots
+  sources and runs suites sequentially with summaries and failure logs.
+- [x] Provide Active Serial backup/program/verify via `scripts/program_as.py`.
+- Audit older IC tests (`tb_jkff`, `tb_LS83`, `tb_LS92`, `tb_LS93`, and other tests
+  absent from current runners). Replace legacy component instantiation with
+  direct entities and require actual assertion/completion evidence.
+- Keep coverage explicit: automated Quartus timing guards are included; optional
+  ModelSim fitted simulations have separate prerequisites.
 
-After 1.1–1.2, playfield is the solid base for all later video (ball, players, score).
+### 5. Fidelity and calibration
 
----
+These are documented approximations/adaptations, not newly demonstrated gameplay
+failures. Audit them against sources or measurements before changing behavior.
 
-## Phase 2: Game Control Logic — REVIEW THEN TRUST
+| Area | Follow-up and existing evidence |
+| --- | --- |
+| Player layout | Audit the uniform-spacing J6/L6 changes and related BLIP guard together; see [one-player history](ONE_PLAYER_HANDOFF.md) and [rear catch correction](REAR_CATCH_TIMEOUT.md). |
+| Analog functions | Calibrate player ramp/555 models, timer-line window and [M9 sound estimates](SOUND_CIRCUIT_FIG20.md); retain tested gameplay while documenting model boundaries. |
+| Raster and ball | Preserve the approved [clock choice](MASTER_CLOCK_AND_VIDEO_ADOPTION.md), [vertical presets](VERTICAL_BALL_313_LINE_ADAPTATION.md), [horizontal STOP preset](CATCH_STOP_DIAGNOSIS.md) and [carry/routing repairs](VERTICAL_BALL_TIMING.md). |
+| Moving hole | Preserve the approved [6/8 presets and boundary sampling](MOVING_HOLE_FIG18.md); Figure 18 drawing/prose reconciliation remains a source question. |
+| Video output | The MaSTer/Sprint2 output works; recreating the original Figure 22 resistor network remains fidelity work. |
+| FPGA adapters | Keep the [collision sampling](COLLISION_TIMING_HANDOFF.md), registered carries and top-level MISS qualification explicit in documentation. |
 
-These blocks exist but are not yet verified against schematics. Review before relying on them for ball/game logic.
+## Completed integration
 
-| Circuit | File | Action |
-|---------|------|--------|
-| Electronic Latch | ElectronicLatchCircuit.vhd | Review Fig 8; confirm transistor latch model is adequate. |
-| Credit | CreditCircuit.vhd | Review against Fig 8; TTL-only. |
-| Start | StartCircuit.vhd | Review against Fig 8. |
-| Game Select | GameSelectCircuit.vhd | Runtime GameSelect_I with board contact adapter and Fig 10 C5 attract gating; tested. |
-| Time Line | TimeLineCircuit.vhd | Review Fig 8; 555 model. |
-| Serve Timing | ServeTimingCircuit.vhd | Review Fig 12; one-shot model. |
+Clock/sync, playfield, coin/start/credit, runtime game selection, timer/serve,
+players and controls, ball/catch/bounce, moving hole, score, sound and board video
+are all integrated. Figure 12 controls serving; the old custom 13 ms serve
+process has been removed. Ball shape and catch drift have received specific
+RTL/fitted repairs; the old claim that diagonal skew is unavoidable is obsolete.
 
-No strict order; can be done in parallel or as needed when wiring into the top-level. Each review: schematic → pin list → VHDL; add a short doc note or header comment if behaviour is non-obvious.
-
----
-
-## Phase 3: Ball System — LARGELY COMPLETE
-
-**Objective:** Ball position, motion, and visibility driven by schematic-accurate circuits; ball rendering re-enabled in atari_wcc once correct.
-
-| Task | What | Status |
-|------|------|--------|
-| 3.1 | **VerticalDirectionAndSpeed.vhd** – Fig 14. Direct entity instantiation, fixed adder connections. | **DONE** |
-| 3.2 | **HorizontalDirectionAndSpeed.vhd** – Fig 15 (B6 IC9316, B5 LS83, A6 LS08, A5 LS86). | **DONE** |
-| 3.3 | **BallMotionCircuit.vhd** – Fig 16. Vertical counters A4+D4 (HSYNCn), horizontal B4+C4 (CLOCK_7 gated by HBLANKn), B3 phase FFs, BALL window decode. | **DONE** |
-| 3.4 | **CatchKickHorizontalDirection.vhd** – Fig 13 (E4, D5, F7, E6, F6, E5 IC9602, D8). | **DONE** |
-| 3.5 | **WindowMissBounce.vhd** – Fig 19 (F5, F4, H5, E3). BounceController.vhd removed. | **DONE** |
-
-Ball is re-enabled in atari_wcc. `serve_proc` fires at ~13 ms to place ball near centre. Ball renders as a slight diagonal due to hardware-accurate 374-clock active line (not divisible by 8); this matches real hardware behaviour.
-
----
-
-## Phase 4: Players — SUBSTANTIALLY COMPLETE
-
-**Objective:** Fig 11 – ramp generation, vertical window, mux, pattern generation; all TTL/schematic-accurate.
-
-| Sub-circuit | File | Status |
-|-------------|------|--------|
-| Vertical Window Generator | PlayersVerticalWindow.vhd | **DONE** |
-| Ramp Generator | PlayersRampGenerator.vhd | **DONE** |
-| Solid Forwards (left team) | PlayersSolidForwards.vhd | **DONE** |
-| Solid Defense / Goalie | PlayersSolidDefenseGoalie.vhd | **DONE** – VSYNCn reset added to fix frame drift at POSITION=0 |
-| Striped Forwards | PlayersStripedForwards.vhd | **DONE** |
-| Striped Defense / Goalie | PlayersStripedDefenseGoalie.vhd | **DONE** – same VSYNCn reset fix applied |
-| Multiplexer | PlayersMultiplexer.vhd | **DONE** |
-| Player Summing | PlayersSumming.vhd | **DONE** |
-| Check Pattern Generator | (in PlayersSumming) | **DONE** |
-| One Player Solid Def. Defeat | (in PlayersSumming) | **DONE** |
-| Control Switch | (inline in atari_wcc) | **DONE** |
-
-All players wired in atari_wcc.vhd and visible in simulation.
-
----
-
-## Phase 5: Window / Bounce / Scoring / Sound
-
-**Objective:** Hit (Fig 17), Moving Hole (Fig 18), Window/Miss/Bounce (Fig 19), Score (Fig 21), Sound (Fig 20).
-
-| Task | What |
-|------|------|
-| 5.1 | **Hit Circuit** – Fig 17 (K6 LS08); simple AND. |
-| 5.2 | **Moving Hole** – Fig 18 implemented and tested; F3, M1, J1, E3, K1, H1, L4, M4. Approved 6/8 presets and settled boundary sampling restore reversal on the 313-line raster (22 October 2026). RTL verified; board timing pending. See [verification notes](MOVING_HOLE_FIG18.md). |
-| 5.3 | **Window/Miss/Bounce** – Fig 19 (done as part of Phase 3.5). |
-| 5.4 | **Score Circuit — IMPLEMENTED AND INTEGRATED** – Fig 21, `ScoreCircuit.vhd`. RTL and fitted timing regressions pass following the Q0 clock-routing correction. Project owner confirmed goal counting works properly on FPGA on 18 October 2026. See [score timing and verification](SCORE_ROLLOVER_TIMING.md). |
-| 5.5 | **Sound Circuit** – Fig 20 (J9, M9, E5 IC9602, L8 LS00, E7 LS27). |
-
-Order: 5.1–5.3 support game behaviour; 5.4–5.5 can follow or run in parallel once blocks are ready.
-
----
-
-## Phase 6: Integration
-
-- **Video Summing** – Fig 22: combine COMP_SYNC, SCORE, BALL, PADDLES per schematic (resistor network; in RTL, produce the same combined logic levels).
-- **Top-level** – atari_wcc (and atari_wcc_board) wire all blocks; ensure one source of truth for each signal (no duplicate logic).
-- **Board** – Quartus: atari_wcc_board + Altera/clk_pll.vhd, MaSTer pinout and composite circuit (see docs/MASTER_CLOCK_AND_VIDEO_ADOPTION.md).
-
----
-
-## Suggested Order of Work (Summary)
-
-1. ~~**Playfield**~~ – **DONE** (Phase 1).
-2. ~~**Ball system**~~ – **DONE** (Phase 3).
-3. ~~**Players**~~ – **DONE** (Phase 4).
-4. **Game control** – Review Phase 2 circuits (Electronic Latch, Credit, Start, Time Line, Serve Timing). Wire into top-level and verify behaviour.
-5. **Hit, Moving Hole, Score, Sound** – Phase 5; score circuit integrated and goal counting confirmed on FPGA (18 October 2026).
-6. **Video summing and top-level integration** – Phase 6.
-7. **Board build** – PLL + atari_wcc_board + MaSTer video/pinout.
-
----
-
-## Docs and References
-
-- **AGENTS.md** – Rules, style, 74LS library, known bugs, “How to Approach a New Circuit”.
-- **Goal_IV_TM-035.md** – Manual text; **diagrams/** – Schematic figures.
-- **docs/MASTER_CLOCK_AND_VIDEO_ADOPTION.md** – 14.31818 MHz PLL and CRT output.
-- **docs/PLAYFIELD_REFERENCE_AND_FRAME_OUTPUT.md** – Coordinates and frame layout.
-- **README.md** – PCB IC grid and project layout.
-
-Keeping this plan updated (e.g. ticking off phases or tasks as done) will give a clear “what’s next” for the project.
+Current board and full-core simulation use a 14.285714 MHz master clock and
+7.142857 MHz pixel clock, with 455 clocks per line and 313 lines per field.
+The original nominal master clock is 14.318180 MHz.

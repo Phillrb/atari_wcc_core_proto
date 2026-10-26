@@ -1,5 +1,13 @@
 # Immediate release on FPGA — 23 October 2026
 
+> Current status (26 October): the owner confirmed the audible diagnostic image
+> has working catch/kick, as well as the silent diagnostic. LED0's diagnostic
+> connection is now retained in the main source; sound is enabled and pin 7 is
+> the credit lamp. The underlying build-sensitive catch fault remains unresolved.
+> Later credit/acceleration images require their own physical confirmation.
+> The preparation steps and pending observations below are historical records.
+
+
 The owner reports that goalies and forwards kick immediately, with no visible
 pause, in both game modes. The cause has **not been reproduced or fixed**.
 

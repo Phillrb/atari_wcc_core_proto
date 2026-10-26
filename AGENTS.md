@@ -27,7 +27,7 @@ You are recreating Atari's 1974 arcade game "World Cup" (also known as "World Cu
 ```
 atari_wcc_core_proto/
   74LS/               # 74-series TTL IC models (LS00, LS02, LS04, LS08, etc.)
-  IC/                 # Other IC models (IC9316, IC9314, IC9602, IC555, dff, jkff)
+  IC/                 # Other IC models (IC9316, IC9314, IC9602, dff, jkff)
   diagrams/           # Schematic figures from TM-035 manual (PNG)
   docs/               # Build documentation, analysis, implementation notes
   sim/                # Simulation scripts and output (run_sim.sh, visualize.py, frame_output.png)
@@ -116,6 +116,17 @@ Each circuit file should have a comment block identifying:
 
 ## Simulation Pipeline
 
+### Automated build and verification
+
+Use `./scripts/build_and_test.py` for routine builds and verification; see
+[docs/BUILD_AND_TEST.md](docs/BUILD_AND_TEST.md). It snapshots current sources,
+builds, runs routing/timing guards and regressions, and writes `summary.txt` and
+`report.json` in its printed run directory. Wait for that run rather than
+reissuing individual commands or repeatedly dumping logs. Inspect its PNG and
+GIF/contact sheet after `AUTOMATED_PASS`; visual review remains mandatory.
+`--quick` has explicitly reduced coverage. When programming is requested, pass
+the exact POF from the successful run to `scripts/program_as.py`.
+
 ### Running a Simulation
 ```bash
 cd sim && bash run_sim.sh
@@ -128,7 +139,7 @@ The default capture is 650 ms, with testbench-driven coin/start and accelerated 
 ### Output Files
 | File | Purpose |
 |------|---------|
-| `sim/frame_data.txt` | Raw samples: `HSYNC VSYNC HBLANK VIDEO` at 7.159 MHz |
+| `sim/frame_data.txt` | Raw samples: `HSYNC VSYNC HBLANK VIDEO` at 7.142857 MHz |
 | `sim/frame_output.png` | Paid-play frame (index 20, 2x scale, green phosphor) |
 | `sim/gameplay.gif` | Animated GIF of all complete frames (1x scale, 100 ms/frame) |
 | `sim/frame_output.ppm` | Written only when `--ppm` flag is passed to visualize.py |
@@ -136,14 +147,14 @@ The default capture is 650 ms, with testbench-driven coin/start and accelerated 
 ### Current sim output (limitations)
 Ball rendering is enabled. The board now boots into attract and uses Figure 8 coin/start control and Figure 12 serve timing. Coin1_I (pin 120) and Start1_I (pin 112) are active-low NO inputs with pull-ups and 5 ms debounce. Board games last two minutes, with three-second serve/catch timing; simulation supplies coin/start and accelerates these to 300 ms / 50 ms. See [docs/JAMMA_GAME_CONTROL.md](docs/JAMMA_GAME_CONTROL.md). The custom 13 ms serve process has been removed.
 
-**Ball diagonal shape is hardware-accurate**: 374 active clocks per line (H=80..453) is not divisible by 8 (the C4 counter range), so the ball window drifts horizontally by 6px each scanline. This is inherent TTL behaviour masked by CRT phosphor persistence on the original hardware. No fix needed or possible without changing the counter architecture.
+**Ball shape and STOP drift have been repaired.** The older claim that diagonal skew is unavoidable was superseded by measured counter timing and fitted hazards. The current implementation uses approved horizontal/vertical preset adaptations, registered A4/C4 carries and shared clock routing. See [horizontal STOP evidence](docs/CATCH_STOP_DIAGNOSIS.md) and [vertical fitted verification](docs/VERTICAL_BALL_TIMING.md). Do not reintroduce the old skew explanation as an implementation requirement.
 
 ### Board build (MaSTer clock and video)
-For a real CRT, use the same clock and video stack as the **MaSTer** projects: 50 MHz board clock → PLL → **14.318180 MHz**, and MaSTer-style composite output (Sync + Video resistors). See [docs/MASTER_CLOCK_AND_VIDEO_ADOPTION.md](docs/MASTER_CLOCK_AND_VIDEO_ADOPTION.md). Use **atari_wcc_board** as the Quartus top and **Altera/clk_pll.vhd** for the PLL.
+For a real CRT, use the same clock and video stack as the **MaSTer** projects: 50 MHz board clock → PLL → **14.285714 MHz** (2/7 ratio; original nominal clock 14.318180 MHz), and MaSTer-style composite output (Sync + Video resistors). See [docs/MASTER_CLOCK_AND_VIDEO_ADOPTION.md](docs/MASTER_CLOCK_AND_VIDEO_ADOPTION.md). Use **atari_wcc_board** as the Quartus top and **Altera/clk_pll.vhd** for the PLL.
 
 ### Adding New Circuits to Simulation
 1. Add `ghdl -a --std=93 "$ROOT/YourCircuit.vhd"` to `sim/run_sim.sh`
-2. Instantiate in `atari_wcc.vhd` (the simulation and Quartus top-level)
+2. Instantiate in `atari_wcc.vhd` (the simulated core; Quartus uses the `atari_wcc_board` wrapper)
 3. Wire the output into the VIDEO signal path
 4. Run simulation and verify PNG output
 
@@ -166,7 +177,7 @@ For a real CRT, use the same clock and video stack as the **MaSTer** projects: 5
 
 ## 74LS IC Library
 
-All 74-series ICs listed below have been validated (testbenches and/or simulation).
+The IC library is exercised by circuit regressions and individual tests. Some older standalone testbenches still use component instantiation and are not included in current runners; auditing them is recorded in [the work queue](docs/IMPLEMENTATION_PLAN.md).
 
 ### Available (in `74LS/`)
 | IC | Type | File | Notes |
@@ -204,7 +215,7 @@ All 74-series ICs listed below have been validated (testbenches and/or simulatio
 | jkff | JK Flip-Flop primitive | jkff.vhd |
 
 ### Quality Notes
-- All 74LS ICs in the library have been validated; you can rely on them for new circuits.
+- Inspect each model and its actual test coverage before using it in a new path; existing circuit tests do not prove every IC mode.
 - The chained NAND bug was fixed in LS10/LS20/LS30.
 - LS93 MR polarity was fixed (`MR1 and MR2`, not `MR1 nand MR2`).
 - jkff.vhd uses `rising_edge(clk)` (fixed from `clk'event and clk='1'`).
@@ -225,9 +236,9 @@ These bugs were discovered during simulation bring-up. Be aware of them when wri
 
 ## Circuit Implementation Plan
 
-**Full plan (what to do in what order):** [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
+**Current priorities and verification:** [work queue](docs/IMPLEMENTATION_PLAN.md) and [verification record](docs/VERIFICATION_STATUS.md). Acceleration and the credit lamp are implemented; latest-image hardware confirmation and timing coverage remain incomplete. See docs/HIT_ACCELERATION.md and docs/CREDIT_LED.md. The audible diagnostic image has owner-confirmed catching/kicking; the underlying build-sensitive fault remains unresolved.
 
-The Goal IV game consists of the following circuits, listed in recommended implementation order. Each references a figure from TM-035 and has a schematic diagram in `diagrams/`.
+The Goal IV game consists of the following integrated circuit groups. Each references a figure from TM-035 and has a schematic diagram in `diagrams/`.
 
 ### Phase 0: Foundation (DONE)
 These are verified and working:
@@ -239,7 +250,7 @@ These are verified and working:
 | Vertical Sync | VerticalSync.vhd | Fig 5 | Verified |
 | Sync Summing | SyncSumming.vhd | Fig 6 | Verified |
 
-Timing: 455 clocks/scanline, 313 lines/frame, 50.27 Hz (PAL).
+Timing: 455 clocks/scanline, 313 lines/frame, approximately 50.16 Hz with the current board PLL (PAL-like raster).
 
 ### Phase 1: Static Video (DONE – schematic-accurate)
 
@@ -247,7 +258,7 @@ Timing: 455 clocks/scanline, 313 lines/frame, 50.27 Hz (PAL).
 |---------|------|--------|-----|--------|
 | Playfield | PlayfieldCircuit.vhd | Fig 9 | M5(LS86), N5(LS00), N4(LS27), H4(LS02), H6(LS10), J4(LS20), K4(LS107), C6(LS04) | Schematic-accurate: all logic via TTL. K4 is single LS107 (FF1=V, FF2=H). (A+B)n from H6 pin 8; (C+D)n via J4 gate 2; H4=LS02 NOR(V4,V8)→J4. Verified in sim. |
 
-### Phase 2: Game Control Logic (PARTIALLY DONE - NEEDS REVIEW)
+### Phase 2: Game Control Logic (INTEGRATED; ANALOG MODEL LIMITATIONS)
 
 | Circuit | File | Figure | ICs | Status |
 |---------|------|--------|-----|--------|
@@ -258,24 +269,24 @@ Timing: 455 clocks/scanline, 313 lines/frame, 50.27 Hz (PAL).
 | Time Line | TimeLineCircuit.vhd | Fig 8 | A2(LS10), N4(LS27), K1(LS74), D9(LS04), E9(555), J2(LS04) | Integrated with two-minute digital RC/555 timing and tested expiry/rearm. Existing timer window approximation remains; not fully pin-accurate. |
 | Serve Timing | ServeTimingCircuit.vhd | Fig 12 | J5(9602), L5(LS74), H4(LS02) | Integrated and tested with pin-accurate IC9602 triggers and three-second board serve/catch delays. |
 
-### Phase 3: Ball System (DONE)
+### Phase 3: Ball System (INTEGRATED; LATEST HARDWARE VERIFICATION OPEN)
 
 | Circuit | File | Figure | ICs | Status |
 |---------|------|--------|-----|--------|
-| Vertical Direction & Speed | VerticalDirectionAndSpeed.vhd | Fig 14 | D7(9314), D6(LS74), C7(LS86), B7(LS02), F6(LS00), C6(LS04), A7(LS83) | Done. Wired into top-level. D7 MRn polarity fixed: `SERVEn=>serve_i`. A7 adder connections verified against schematic. |
-| Horizontal Direction & Speed | HorizontalDirectionAndSpeed.vhd | Fig 15 | B6(IC9316), B5(LS83), A6(LS08), A5(LS86), B7(LS02), F6(LS00), C6(LS04), F5(LS08) | Done. Wired into top-level. Idle in sim (BALL='0'). |
-| Ball Motion | BallMotionCircuit.vhd | Fig 16 | A4(IC9316), D4(IC9316), B4(IC9316), C4(IC9316), B3(LS107), A3(LS10)+A2(LS10 label for A3 gate 1), D3(LS08), C3(LS00), E3(LS04) | Done. Schematic-verified. D4 preset=12(1100), C4 preset=8(1000). Ball visible in sim. Figure 12 now controls serve; testbench initiates paid play through coin/start. Diagonal shape is hardware-accurate (374 active px/line not divisible by 8). |
-| Catch/Kick/Horizontal Direction | CatchKickHorizontalDirection.vhd | Fig 13 | E8(LS00), C8(LS00), D8(LS74), D5(LS74), C5(LS08), C9(LS02), K8(LS02), A8(LS04), D9(LS04) | Done. J5 ch1 STOP/STOPn via ServeTimingCircuit. Idle in sim (BALL='0', HIT='0'). |
+| Vertical Direction & Speed | VerticalDirectionAndSpeed.vhd | Fig 14 | D7(9314), D6(LS74), C7(LS86), B7(LS02), F6(LS00), C6(LS04), A7(LS83) | Done. Wired into top-level. D7 MRn polarity fixed: `SERVEn=>serve_i`. A7 includes the approved 313-line speed/STOP adaptation; see docs/VERTICAL_BALL_313_LINE_ADAPTATION.md. |
+| Horizontal Direction & Speed | HorizontalDirectionAndSpeed.vhd | Fig 15 | B6(IC9316), B5(LS83), A6(LS08), A5(LS86), B7(LS02), F6(LS00), C6(LS04), F5(LS08) | Integrated. Horizontal STOP preset 9 is an approved raster adaptation. D8 pin 9 now drives GOALIE_FWD_HIT; Figure 15 decoder wiring is corrected. Acceleration RTL and B6 local timing checks pass; hardware confirmation remains pending. |
+| Ball Motion | BallMotionCircuit.vhd | Fig 16 | A4(IC9316), D4(IC9316), B4(IC9316), C4(IC9316), B3(LS107), A3(LS10)+A2(LS10 label for A3 gate 1), D3(LS08), C3(LS00), E3(LS04) | Integrated and tested. Figure 12 controls serve; A4/C4 registered carries and shared global routing address fitted hazards. Approved motion presets match the current raster. See docs/VERTICAL_BALL_TIMING.md. |
+| Catch/Kick/Horizontal Direction | CatchKickHorizontalDirection.vhd | Fig 13 | E8(LS00), C8(LS00), D8(LS74), D5(LS74), C5(LS08), C9(LS02), K8(LS02), A8(LS04), D9(LS04) | Integrated. J5 ch1 STOP/STOPn via ServeTimingCircuit; sampled collisions, kick and timeout regressions pass. See docs/REAR_CATCH_TIMEOUT.md. |
 
 ### Phase 4: Players (Solid + Striped Forwards, Defense, Goalie – Fig 11)
 
 | Sub-circuit | File | Status |
 |-------------|------|--------|
-| Vertical Window Generator | PlayersVerticalWindow.vhd | Done. M6(LS92), D6(LS74), F6, H6(LS10), J6(LS27), L6(LS86). TEAM, GOALIE, DEFENSEMENn, Q, Qn, BLIP, PLAYER_WINDOWn. Uniform spacing correction: J6 NOR inputs changed from (Q2,Q1) to (Q1 XOR Q2, Q3) for symmetric 48px column gaps; L6 gates 2&3 changed from Q3 to Q2 for correct TEAM/DEFENSEMENn. |
+| Vertical Window Generator | PlayersVerticalWindow.vhd | Done. M6(LS92), D6(LS74), F6, H6(LS10), J6(LS27), L6(LS86). TEAM, GOALIE, DEFENSEMENn, Q, Qn, BLIP, PLAYER_WINDOWn. Uniform spacing correction: J6 NOR inputs changed from (Q2,Q1) to (Q1 XOR Q2, Q3) for symmetric 48px column gaps; L6 gates 2&3 changed from Q3 to Q2 for correct TEAM/DEFENSEMENn. Adapted BLIP is guarded with H8 to prevent catch retriggering; this layout remains a fidelity-audit item. |
 | Ramp Generator | PlayersRampGenerator.vhd | Done. Digital ramp; LS00 charge enable; RAMP_VALUE(9:0) for comparators. |
 | Multiplexer | PlayersMultiplexer.vhd | Done. L7, H7(LS153). Select TEAM, Qn; B1–E4 → PP2, PP3, PP4, SYMBOL. |
 | Check Pattern / One-Player Defeat / Player Summing | PlayersSumming.vhd | Done. E6(XOR H1,V1), F6(NAND TEAM), J2, J1, M1(LS08), K6(LS08) → **PADDLES**. |
-| Solid Forwards | PlayersSolidForwards.vhd | Done. Comparator, M9(IC9602) PULSE_WIDTH=70, K8(LS02), K7(IC9316), J8(LS04) → E2,B2,C2,D2. Vertical spacing 70 scanlines. |
+| Solid Forwards | PlayersSolidForwards.vhd | Done. Comparator, clock-driven M9(IC9602) PULSE_WIDTH_CLKS=66, K8(LS02), K7(IC9316), J8(LS04) → E2,B2,C2,D2. See SPI travel regression for measured positions. |
 | Solid Defense/Goalie | PlayersSolidDefenseGoalie.vhd | Done. 555 model, M7(9316), H8(LS107), E6/K6/J6/L8/J8 → E1,B1,C1,D1. E1 gated by GOALIE so goalie column = middle segment only, defensemen column = top+bottom. SEGMENT_GAP=18 (~1/3 playfield between defensemen). |
 | Striped Forwards | PlayersStripedForwards.vhd | Done. J9(IC9602 ch2), K8(LS02), N7(IC9316), J8(LS04) → E3,B3,C3,D3. Same structure as solid (comparator, one-shot, differentiator, NOR, counter). |
 | Striped Defense/Goalie | PlayersStripedDefenseGoalie.vhd | Done. H9(555), J8, J7(9316), F7(LS107), E8, L6, K6, J6 → E4,B4,C4,D4. Fixed: goalie/defensemen column swap via goalie_segment XNOR GOALIE gating; 555 timing constants tuned (INITIAL_GAP=83, SEGMENT_GAP=5, SEGMENT_LEN=29) to match solid defense vertical layout. |
@@ -288,7 +299,7 @@ See [docs/PLAYERS_CIRCUIT_FIG11.md](docs/PLAYERS_CIRCUIT_FIG11.md) for pin-level
 |---------|------|--------|-----|--------|
 | Hit Circuit | PlayersSumming.vhd | Fig 17 | K6(LS08) gate 4 | Done. BALL AND PADDLES → HIT. Uses spare K6 gate 4 (pins 12,13,11) in PlayersSumming. Wired to CatchKick. |
 | Moving Hole | MovingHoleCircuit.vhd | Fig 18 | F3(LS02), M1(LS08), J1(LS00), E3(LS04), K1(LS74), H1(LS107 original mode), L4(IC9316), M4(IC9316) | Owner-approved 313-line adaptation (22 October 2026): 6/8 presets and top-level LS74 boundary sampling. Repeated reversals and 16-line width verified in RTL; FPGA timing remains unverified. See docs/MOVING_HOLE_FIG18.md. |
-| Window/Miss/Bounce | WindowMissBounce.vhd | Fig 19 | F5(LS08), F4(LS02), H5(LS02), E3(LS04) | Done. Window circuit (2P: V64→goal openings at V=128-191), bounce (V_BOUNCE, H_BOUNCE, BOUNCEn), miss (MISS=H_BOUNCE AND WINDOWS). Idle (BALLn='1'). WINDOWS→PlayfieldCircuit, H_BOUNCE→CatchKick. PlayfieldCircuit exports (A+B)n, (C+D)n for bounce inputs. |
+| Window/Miss/Bounce | WindowMissBounce.vhd | Fig 19 | F5(LS08), F4(LS02), H5(LS02), E3(LS04) | Done. Window circuit (2P: V64→goal openings at V=128-191), bounce (V_BOUNCE, H_BOUNCE, BOUNCEn), miss (MISS=H_BOUNCE AND WINDOWS). Active in gameplay. WINDOWS→PlayfieldCircuit, H_BOUNCE→CatchKick. PlayfieldCircuit exports (A+B)n, (C+D)n for bounce inputs. |
 | Score Circuit | ScoreCircuit.vhd | Fig 21 | M2(LS48), M3/N3(LS153), K3/L3(LS90), N2(LS107), J3(LS00), F2(LS86), H2/K2/L2(LS10), J2/E3(LS04), D3(LS08), L1(LS30), H3/N4(LS27), H5/F3(LS02) | Implemented and integrated. RTL and fitted timing regressions pass; Q0 global clock routing corrects the 9-to-12 rollover fault. Project owner confirmed goal counting works properly on FPGA on 18 October 2026. See [score verification](docs/SCORE_ROLLOVER_TIMING.md). |
 | Sound Circuit | SoundCircuit.vhd | Fig 20 | J9(IC9602), M9(IC9602), E5(IC9602), L8(LS00), E7(LS20) | Implemented and simulated. Pin-accurate 9602 mode, adjustable M9 timing estimates; board Audio1_O on pin 71. See docs/SOUND_CIRCUIT_FIG20.md. |
 
@@ -296,8 +307,8 @@ See [docs/PLAYERS_CIRCUIT_FIG11.md](docs/PLAYERS_CIRCUIT_FIG11.md) for pin-level
 
 | Circuit | File | Figure | ICs | Status |
 |---------|------|--------|-----|--------|
-| Video Summing | - | Fig 22 | Resistor network (R56, R63, R64, R65, C24) | Not yet implemented. Combines COMP_SYNC + SCORE + BALL + PADDLES. |
-| Top-Level | atari_wcc.vhd | - | - | Simulation and Quartus top. Clock, sync, playfield (with goal openings via WindowMissBounce), ball (enabled, Figure 8 coin/start/attract and Figure 12 serve timing), players (vertical window, ramp, mux, summing; Solid + Striped Forwards, Solid + Striped Defense/Goalie → PADDLES enabled), hit circuit (K6), window/miss/bounce (Fig 19), catch/kick/horiz dir (Fig 13), horiz dir & speed (Fig 15). |
+| Video Summing | - | Fig 22 | Resistor network (R56, R63, R64, R65, C24) | MaSTer/Sprint2 board composite output is implemented. Exact recreation of the original Figure 22 resistor network remains fidelity work. |
+| Top-Level | atari_wcc.vhd | - | - | Simulated core under the atari_wcc_board Quartus wrapper. Clock, sync, playfield (with goal openings via WindowMissBounce), ball (enabled, Figure 8 coin/start/attract and Figure 12 serve timing), players (vertical window, ramp, mux, summing; Solid + Striped Forwards, Solid + Striped Defense/Goalie → PADDLES enabled), hit circuit (K6), window/miss/bounce (Fig 19), catch/kick/horiz dir (Fig 13), horiz dir & speed (Fig 15). |
 
 ---
 
@@ -307,22 +318,19 @@ Reference for mapping ICs to PCB grid positions. See README.md for the full grid
 
 ---
 
-## Known Issues in Existing Files
+## Open Issues and Model Boundaries
 
-| File | Issue |
-|------|-------|
-| `VerticalDirectionAndSpeed.vhd` | Done. Wired into top-level. D7 MRn polarity fixed (SERVEn=>serve_i). Compiles clean. |
-| `HorizontalDirectionAndSpeed.vhd` | Done. Compiles clean, wired into top-level. Idle in sim (BALL='0'). No open issues. |
-| `CatchKickHorizontalDirection.vhd` | Done. Wired into top-level. Idle in sim (BALL='0', HIT='0'). No open issues. |
-| `PlayfieldCircuit.vhd` | Schematic-accurate as of last update. No open issues. |
-| `PlayersSolidForwards.vhd` | Done (M9/K8/K7/J8). PULSE_WIDTH_CLKS=70 for vertical spacing. |
-| `PlayersSolidDefenseGoalie.vhd` | Done; E1 gated by GOALIE for correct columns. VSYNCn reset added to 555 phase_count (POSITION=0 means comparator always '1', so reset path needs explicit VSYNC gate). |
-| `PlayersStripedForwards.vhd` | Done. J9(9602 ch2), K8(LS02), N7(9316), J8(LS04) → E3,B3,C3,D3. |
-| `PlayersStripedDefenseGoalie.vhd` | Done; goalie/defensemen column swap fixed; 555 timing tuned to match solid defense. VSYNCn reset added to 555 phase_count (same POSITION=0 issue as solid side). |
-| `PlayersVerticalWindow.vhd` | Done; uniform spacing correction applied. No open issues. |
-| `WindowMissBounce.vhd` | Done. Goal openings visible in sim. Bounce/miss idle (BALLn='1'). No open issues. |
-| `tb_cross_top.vhd` | Removed. Simulation uses `tb_atari_wcc.vhd` with `atari_wcc.vhd` as top. |
-| Players (Fig 11) | **All sub-circuits implemented and verified.** Horizontal columns symmetric (48px uniform spacing). Vertical defender spacing matches between solid and striped teams. |
+The [work queue](docs/IMPLEMENTATION_PLAN.md) is the authoritative task list.
+
+| Area | Current limitation |
+|------|--------------------|
+| `atari_wcc.vhd` / Figure 15 | Acceleration is implemented and tested; confirm progressive rally speed and goal reset on the latest image. |
+| FPGA timing | Ball/score/speed local timing checks pass; event-clock, crossing and I/O coverage remains incomplete. The 32-unconstrained-clock count belongs to the 22 October baseline. |
+| Catch/kick | Diagnostic LED connection changed physical behavior across fits; root cause unresolved. Retain the confirmed diagnostic connection while investigating. |
+| Figure 18 | Repeated reversals pass RTL; specific fitted timing and commit/hash-linked hardware sweep evidence remain open. |
+| Figure 11 | Uniform spacing and BLIP guards are FPGA adaptations. Analog ramp/555 timing and layout fidelity need calibration/audit. |
+| Figures 8/20/22 | Digital analog models, sound duration estimates and substitute composite resistor network remain documented fidelity boundaries. |
+| Older IC tests | Some use component instantiation and are absent from runners; audit before relying on their coverage. |
 
 ---
 
@@ -330,14 +338,13 @@ Reference for mapping ICs to PCB grid positions. See README.md for the full grid
 
 | Parameter | Value |
 |-----------|-------|
-| Master clock | 14.318 MHz |
-| Pixel clock (CLOCK_7) | 7.159 MHz |
+| Master clock | 14.285714 MHz board/sim; original nominal 14.318180 MHz |
+| Pixel clock (CLOCK_7) | 7.142857 MHz board/sim |
 | Clocks per scanline | 455 |
 | Scanlines per frame | 313 (PAL) |
-| Frame rate | 50.27 Hz |
+| Frame rate | Approximately 50.16 Hz at the board clock |
 | HSYNC pulse | 32 clocks |
-| HBLANK period | 81 clocks |
-| Active video per line | 374 clocks |
+| Ball counter enabled edges per line | 375 (measured CLOCK_7 rising edges with HBLANKn high; see STOP diagnosis) |
 | H counter reset at | H454 (256+128+64+4+2) |
 | V counter reset at | V312 (256+32+16+8) |
 
