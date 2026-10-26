@@ -1,8 +1,8 @@
-# Moving-hole reversal proposal
+# Moving-hole reversal — implemented correction and historical evidence
 
 Status: **approved and applied on 22 October 2026**. The owner approved both
 the 6/8 presets and settled boundary sampling. Production VHDL now contains
-the combined correction. The [reviewed patch](moving_hole_fix_candidate.patch)
+the combined correction. The [reviewed patch](archive/moving_hole_2026-10-22/moving_hole_fix_candidate.patch)
 is retained as an archival diff against commit `7c3e8a4`; do not reapply it to
 the updated source. The sections below record the design decision and evidence.
 
@@ -11,7 +11,7 @@ the updated source. The sections below record the design decision and evidence.
 Keep the existing raster, counter cascade, K1 direction latch, H1 mode and
 16-line HOLE decode. Change L4's preset connections using K1's Q and Qn:
 
-| L4 pin | Current connection | Candidate connection |
+| L4 pin | Before correction | Implemented connection |
 | --- | --- | --- |
 | 3, A | High | Low |
 | 4, B | K1 Q, pin 9 | K1 Qn, pin 8 |
@@ -25,7 +25,7 @@ With M4 preset to 12, the recurrence is `512 - (192 + L4 preset)`:
 | Top | 0 | 6 (`0110`) | 314 lines | Down one line |
 | Bottom | 1 | 8 (`1000`) | 312 lines | Up one line |
 
-The current 9/11 presets give 311/309 lines, both upward. Inverting K1 alone
+The former 9/11 presets give 311/309 lines, both upward. Inverting K1 alone
 only exchanges the two upward speeds. This is the same class of mismatch as
 [the earlier ball-speed adaptation](VERTICAL_BALL_313_LINE_ADAPTATION.md), but
 that approval covered A7, not the moving-hole wiring.
@@ -38,7 +38,7 @@ with the actual `VerticalSync` and `PlayfieldCircuit` reproduced a transient
 `(C+D)n` assertion during the 95-to-96 ripple transition. That transient clocks
 K1 if HOLE is already high. The settled boundary signal is inactive at line 96.
 
-The combined candidate extends the existing `CollisionSampleBank` from eight
+The implemented correction extends the existing `CollisionSampleBank` from eight
 to ten channels. Channel 8 captures `(C+D)n` using the existing `collision_clk`;
 channel 9 is tied low. Only `U_MOVING_HOLE` consumes the new channel. This adds
 one explicit LS74 pair and uses the existing sampling phase after CLOCK_7's
@@ -68,16 +68,16 @@ not full-game video.
   the upper boundary and 8 at the lower boundary, with 314/312-line timing.
   These numbers are visible in the scan, not merely in the Markdown/OCR.
 - Figure 18 on PDF page 76 / PCB-48 and `App_Full_Schematic_1.png` instead show
-  the current 9/11 wiring. The prose also contains contradictory 262-line and
+  the original-drawing 9/11 wiring. The prose also contains contradictory 262-line and
   preset-9 statements. This is not a consistent specification.
 - The full schematic is labelled 60 Hz and its vertical-reset wiring differs
   from extracted Figure 5. The origin of the differences is unknown to the
   project owner; a particular conversion history has not been established.
 - The local National Semiconductor `IC/data/9316.PDF`, page 1, agrees with the
   model's counting edge, synchronous load, asynchronous clear and CET-gated
-  terminal count. No shared IC model changes are proposed.
+  terminal count. This correction did not change shared IC models.
 
-The candidate follows the stated gameplay and 6/8 prose, but **deviates from
+The adopted correction follows the stated gameplay and 6/8 prose, but **deviates from
 Figure 18's preset wiring and adds boundary sampling**. It does not establish
 which original PCB/manual variant was correct.
 
@@ -94,8 +94,8 @@ ONE_PLAYER=1 bash run_sim.sh
 The combined focused suite includes the existing IC tests, both preset periods,
 reset and direction retention, boundary gating, Figure 19 mode selection,
 1,000 fields with ideal boundaries, and the actual-raster comparison above.
-The new timing regression rejects the production 9/11 circuit with
-`HOLE recurrence too early`. The patch passes `git apply --check` against the
+The new timing regression rejects the former 9/11 circuit with
+`HOLE recurrence too early`. The archived patch passed `git apply --check` against the
 pre-adoption production source at `7c3e8a4`.
 
 The combined candidate's standard 650 ms full-core run passes paid start,
@@ -112,23 +112,15 @@ bottom/top/bottom, but its upper reversal was the premature line-95 event.
 That run exposed the need for boundary sampling. It must not be described as
 an eight-second full-core test of the combined candidate.
 
-For reproducing that earlier diagnostic only, start with an isolated checkout
-of `7c3e8a4` (not the updated production source), then apply
-`moving_hole_6_8_candidate.patch` instead of the combined patch, run the standard
-simulation, then apply `moving_hole_video_diagnostic.patch` in the isolated copy:
+The obsolete patches and eight-second diagnostic helper are now in the
+[historical archive](archive/moving_hole_2026-10-22/README.md). They are not
+build inputs and must not be applied to current sources. Use the runners above
+for current verification.
 
-```sh
-cd sim
-# Compile the instrumented source and long-game testbench after applying patches.
-ghdl -a --std=93 ../atari_wcc.vhd ../testbench/tb_atari_wcc.vhd
-ghdl -r --std=93 tb_moving_hole_video "-gONE_PLAYER_MODE='1'" --stop-time=8000ms --assert-level=error
-python3 ../docs/check_moving_hole_candidate_trace.py moving_hole_full_trace.csv
-python3 visualize.py --frame=20
-```
+## Subsequent status
 
-That instrumentation is simulation-only and must not enter the board build.
-It captures video one frame in four and logs the vertical counter and HOLE on
-every HSYNCn edge, using 10 ns timestamp units to avoid integer overflow.
-
-No candidate Quartus fit, post-fit timing simulation or physical FPGA check has
-been performed. Those remain necessary before claiming board verification.
+The combined correction is included in subsequent successful Quartus builds,
+including the 24 October acceleration image. The owner confirmed one-player
+mode complete on 26 October. Specific moving-hole fitted timing coverage and
+image-linked sweep measurements remain separate verification tasks; see the
+[current verification record](VERIFICATION_STATUS.md).
