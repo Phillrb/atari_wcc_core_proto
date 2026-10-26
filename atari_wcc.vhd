@@ -65,7 +65,6 @@ signal v1_i, v2_i, v4_i, v8_i, v16_i, v32_i, v64_i, v64n_i, v128_i, v128n_i, v25
 signal playfield_n    : STD_LOGIC;
 signal henab_i        : STD_LOGIC;
 signal venab_i        : STD_LOGIC;
-signal video_playfield : STD_LOGIC;
 signal video_paddles  : STD_LOGIC;
 signal ramp_value_i   : STD_LOGIC_VECTOR(9 downto 0);
 signal team_i         : STD_LOGIC;
@@ -114,7 +113,6 @@ signal ball_n_i         : STD_LOGIC;
 signal hit_tone_i       : STD_LOGIC;
 signal time_line_n_i    : STD_LOGIC;
 signal end_of_game_i    : STD_LOGIC;
-signal video_timeline   : STD_LOGIC;
 signal score_i          : STD_LOGIC;
 signal start_i          : STD_LOGIC;    -- score counter reset (active high)
 signal start_n_i        : STD_LOGIC;    -- inverted START (active low)
@@ -545,9 +543,6 @@ U_VERT_SPEED: entity work.VerticalDirectionAndSpeed
 		HITn    => hitn_i
 	);
 
--- Convert active-low playfield to active-high video signal and apply blanking
-video_playfield <= (not playfield_n) and hblankn_i;
-
 -- Ball motion circuit
 U_BALL_MOTION: entity work.BallMotionCircuit
 	port map(
@@ -618,7 +613,6 @@ U_SCORE: entity work.ScoreCircuit
 
 -- Convert PADDLES to video
 video_paddles <= paddles_i and hblankn_i;
-video_timeline <= (not time_line_n_i) and hblankn_i;
 
 -- Output video
 VIDEO <= score_i or video_paddles or (ball_i and hblankn_i);

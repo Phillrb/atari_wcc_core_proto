@@ -1,5 +1,7 @@
 # Figure 20: sound circuit
 
+> The validation section records the original sound integration build. Its negative timing figures are historical; see [current verification status](VERIFICATION_STATUS.md) for the latest inspected reports and remaining coverage gaps.
+
 Implemented in `SoundCircuit.vhd` using direct IC9602, LS00 and LS20 instances.
 The user confirmed Figure 20 wiring, timing components, P2 = +5 V, and E7 =
 7420 (the previous LS27 entry in AGENTS.md was incorrect).

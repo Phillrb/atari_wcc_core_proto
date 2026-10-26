@@ -18,14 +18,16 @@ The verification and fidelity tasks below remain separate from functional comple
 
 - [x] Replace the obsolete phase plan with this prioritized queue.
 - [x] Refresh README and agent-facing status, clock and ball-shape information.
-- [x] Archive the unused, invalid `IC/ControlsSPI.vhd` draft outside compiled sources.
+- [x] Retain the unused `IC/ControlsSPI.vhd` draft at the owner's request;
+  it remains excluded from the Quartus and simulation builds.
 - [x] Ignore Quartus workspace state and remove `atari_wcc.qws` from version control,
   retaining the local file.
 - [x] Remove unused `video_playfield` and `video_timeline` signals; their source
   signals already feed the visible output through `ScoreCircuit`.
 - [x] Label superseded investigation notes and preserve source/diagnostic evidence.
-- [ ] Verify the cleanup with the full simulation, compare PNG/GIF to the review
-  baseline, and commit locally. Do not include the pre-existing QSF edit.
+- [x] The unused-signal cleanup was included in the successful 24 October
+  build/test runs and visually reviewed captures. Remaining cleanup is recorded
+  separately; the QSF whitespace-only edit has been discarded.
 
 ### 2. Verify hit-driven horizontal acceleration on hardware
 

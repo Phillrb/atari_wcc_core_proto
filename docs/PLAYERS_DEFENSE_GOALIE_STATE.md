@@ -1,5 +1,7 @@
 # Solid Defense / Goalie – Current State and Known Issue
 
+> Historical February bring-up state. Fixed POSITION=0 and some timing/decoding descriptions below have been superseded. Current board positions come from SPI controls; see [SPI controls](SPI_CONTROLS.md) and the [work queue](IMPLEMENTATION_PLAN.md).
+
 **Date:** 2026-02-19
 
 ## What Is Implemented

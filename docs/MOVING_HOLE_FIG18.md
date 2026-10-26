@@ -98,7 +98,11 @@ Generated artifacts (ignored by git):
   most recent `run_sim.sh` invocation.
 
 The signal diagnostic is labelled separately from the full-core video. It
-renders actual testbench samples. Quartus fit, post-fit timing and physical
-FPGA verification of this adaptation remain outstanding.
+renders actual testbench samples. The correction is included in subsequent successful Quartus builds. The owner
+confirmed one-player mode complete on 26 October 2026; see the
+[verification record](VERIFICATION_STATUS.md). Specific post-fit moving-hole
+timing and image-linked sweep measurements remain separate verification tasks.
 
-For remaining gameplay corrections and source questions, see [one-player handoff](ONE_PLAYER_HANDOFF.md).
+For remaining gameplay corrections and source questions, see the
+[current work queue](IMPLEMENTATION_PLAN.md). The [one-player handoff](ONE_PLAYER_HANDOFF.md)
+is retained as historical context.

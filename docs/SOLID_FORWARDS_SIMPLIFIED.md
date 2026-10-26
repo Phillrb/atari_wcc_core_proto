@@ -1,5 +1,7 @@
 # Solid Forwards – Implementation Notes
 
+> Historical implementation note. The pulse-width generic and polling description below are obsolete. Current PlayersSolidForwards uses clock-driven IC9602 with PULSE_WIDTH_CLKS=66; see [SPI controls and travel verification](SPI_CONTROLS.md) and [current source](../PlayersSolidForwards.vhd).
+
 ## Schematic (TM-035 Figure 11)
 
 - **Comparator N9-12**: ramp from ramp generator vs pot (variable resistor) → threshold crossing.

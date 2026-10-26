@@ -3,7 +3,8 @@
 `SPIAdapter.vhd` replaces the temporary quadrature-spinner input in the board
 wrapper. The ATtiny measures four resistive controls; the FPGA is SPI master.
 The existing `SpinnerAdapter.vhd` and its tests remain available for reference.
-The untracked `IC/ControlsSPI.vhd` draft is not compiled or modified: it has
+The restored [IC/ControlsSPI.vhd](../IC/ControlsSPI.vhd) is an unused draft,
+excluded from the Quartus and simulation build lists. The draft has
 syntax/counter-range defects, lacks the firmware's inter-byte pauses, and
 suppresses the final SCLK rising pulse when leaving its transfer state.
 
@@ -114,7 +115,10 @@ Physical wiring, the actual resistors' endpoint values and knob direction still
 require hardware testing. Quartus fitting is checked separately from timing
 closure; the project has reported hold/removal violations and unconstrained clocks.
 
-Quartus 13.0 SP1 synthesis/fitting passed: 3,112/4,608 logic elements (68%).
+Historical SPI integration build: Quartus 13.0 SP1 synthesis/fitting passed at 3,112/4,608 logic elements (68%).
 The fitter confirms pins 42/43/44/45. TimeQuest still reports hold/removal
 violations (worst slow-model hold slack −30.346 ns) and unconstrained clocks;
 this is not a timing-closed release.
+
+Those timing numbers describe the earlier SPI build. For newer targeted timing results and remaining coverage gaps, see
+[current verification status](VERIFICATION_STATUS.md).

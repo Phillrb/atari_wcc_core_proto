@@ -1,9 +1,13 @@
 # One-player correction handoff — 2026-09-30
 
-Historical handoff: the moving-hole reversal work below was subsequently
-approved and applied on 22 October 2026. Current behavior uses 6/8 presets and
-settled boundary sampling; see [current verification](MOVING_HOLE_FIG18.md).
-The earlier unresolved-status statements below describe the September state.
+One-player mode was confirmed complete by the owner on 26 October 2026.
+
+Historical handoff: Figure 10 runtime selection and attract gating are now
+integrated and tested. The moving-hole reversal work was approved and applied
+on 22 October 2026, using 6/8 presets and settled boundary sampling; see
+[current verification](MOVING_HOLE_FIG18.md). The unresolved-status statements
+below describe the September state. The player-layout fidelity audit remains
+in the [current work queue](IMPLEMENTATION_PLAN.md).
 
 ## Required result
 

@@ -10,6 +10,7 @@ testbench/work
 transcript
 *.wlf
 *.cf
+*.qws
 
 # Python
 sim/__pycache__/
@@ -72,3 +73,6 @@ sim/horizontal_stop.gif
 sim/catch_traversal.csv
 sim/catch_traversal.png
 sim/catch_traversal.gif
+
+# Generated local tool log
+sim/PanGPA.log
